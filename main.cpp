@@ -142,11 +142,11 @@ public:
 
     Node *search(V v) {
         parents_t parents;
+        parents.reserve(30);
         return search(v, parents);
     }
 
     Node *search(V v, parents_t &parents) {
-        Node *node = nullptr;
         std::cout << "current: " << this->get_value() << std::endl;
         if (v < this->value) {
             if (this->left != nullptr) {
@@ -166,6 +166,47 @@ public:
             else {
                 splay(this, parents, parents.size() - 1);
                 return nullptr;
+            }
+        }
+        else {
+            splay(this, parents, parents.size() - 1);
+            return this;
+        }
+    }
+
+    Node *insert(V v) {
+        parents_t parents;
+        parents.reserve(30);
+        return insert(v, parents);
+    }
+
+    Node *insert(V v, parents_t &parents) {
+        Node *node = nullptr;
+        std::cout << "current: " << this->get_value() << std::endl;
+        if (v < this->value) {
+            if (this->left != nullptr) {
+                parents.push_back(this);
+                return this->left->insert(v, parents);
+            }
+            else {
+                parents.push_back(this);
+                node = new Node(v);
+                this->left = node;
+                splay(node, parents, parents.size() - 1);
+                return node;
+            }
+        }
+        else if (v > this->value) {
+            if (this->right != nullptr) {
+                parents.push_back(this);
+                return this->right->insert(v, parents);
+            }
+            else {
+                parents.push_back(this);
+                node = new Node(v);
+                this->right = node;
+                splay(node, parents, parents.size() - 1);
+                return node;
             }
         }
         else {
@@ -193,6 +234,9 @@ int main() {
     result->print_all();
 
     result = result->search(4);
+    result->print_all();
+
+    result = result->insert(3);
     result->print_all();
 //    std::cout << left.get_right()->get_value();
 
