@@ -3,6 +3,7 @@
 #include <vector>
 
 const int debug = 0;
+const int debug2 = 1;
 
 template <typename V>
 class Node;
@@ -13,6 +14,12 @@ size_t get_size_of_subtree(Node<V> *node) {
     return node == nullptr ? 0 : node->give_size_of_subtree();
 }
 
+template<typename V>
+void update_size_of_subtree(Node<V> *node) {
+    if (node != nullptr)
+        node->_update_size_of_subtree();
+}
+
 template <typename V>
 class Node {
     using parents_t = std::vector<Node *>;
@@ -21,18 +28,14 @@ class Node {
     V value;
     size_t size_of_subtree;
 
-    void update_size_of_subtree() {
-        size_of_subtree = 1 + get_size_of_subtree(right) + get_size_of_subtree(left);
-    }
-
     void rotate_right(Node *parent, Node *grand_parent) {
         if (debug) {std::cout << this->get_value() << "->rotate_right(" << parent->get_value() << ", "
             << (grand_parent != nullptr ? grand_parent->get_value() : -1) << ")" << std::endl;}
         assert(parent->left == this);
         parent->left = this->right;
-        parent->update_size_of_subtree();
+        parent->_update_size_of_subtree();
         this->right = parent;
-        this->update_size_of_subtree();
+        this->_update_size_of_subtree();
         if (grand_parent != nullptr) {
             assert(grand_parent->left == parent || grand_parent->right == parent);
             if (grand_parent->left == parent) {
@@ -49,9 +52,9 @@ class Node {
                   << (grand_parent != nullptr ? grand_parent->get_value() : -1) << ")" << std::endl;}
         assert(parent->right == this);
         parent->right = this->left;
-        parent->update_size_of_subtree();
+        parent->_update_size_of_subtree();
         this->left = parent;
-        this->update_size_of_subtree();
+        this->_update_size_of_subtree();
         if (grand_parent != nullptr) {
             assert(grand_parent->left == parent || grand_parent->right == parent);
             if (grand_parent->left == parent) {
@@ -143,6 +146,10 @@ public:
 
     ~Node() {
         destroy();
+    }
+
+    void _update_size_of_subtree() {
+        size_of_subtree = 1 + get_size_of_subtree(right) + get_size_of_subtree(left);
     }
 
     void set_left(Node *node) {
@@ -279,8 +286,8 @@ public:
             node->right = this;
             node->left = this->left;
             this->left = nullptr;
-            this->update_size_of_subtree();
-            node->update_size_of_subtree();
+            this->_update_size_of_subtree();
+            node->_update_size_of_subtree();
             if (!parents.empty()) {
                 if (parents[parents.size() - 1]->get_left() == this)
                     parents[parents.size() - 1]->left = node;
@@ -294,63 +301,175 @@ public:
     }
 
     Node *move(size_t pos_begin, size_t pos_end, size_t pos_after) {
+        if (pos_end - pos_begin + 1 == this->size_of_subtree) {
+            return this;
+        }
+
         Node *temp = this->search(pos_end);
 
         Node *left_side, *right_side;
 
         right_side = temp->right;
         temp->right = nullptr;
-        right_side->update_size_of_subtree();
-        temp->update_size_of_subtree();
+        update_size_of_subtree(right_side);
+        update_size_of_subtree(temp);
 
         temp = temp->search(pos_begin);
 
         left_side = temp->left;
         temp->left = nullptr;
-        left_side->update_size_of_subtree();
-        temp->update_size_of_subtree();
+        update_size_of_subtree(left_side);
+        update_size_of_subtree(temp);
 
-        if (debug) {
+        if (debug2) {
             std::cout << "LEFT: ";
-            left_side->print_sequence();
+            if (left_side != nullptr) left_side->print_sequence();
             std::cout << std::endl << "TEMP: ";
             temp->print_sequence();
             std::cout << std::endl << "RIGHT: ";
-            right_side->print_sequence();
+            if (right_side != nullptr) right_side->print_sequence();
             std::cout << std::endl;
         }
 
-        Node *new_node = left_side;
-        new_node = new_node->search(pos_begin - 1);
-        new_node->right = right_side;
-        new_node->update_size_of_subtree();
+        Node *new_node;
+        if (left_side != nullptr) {
+            new_node = left_side;
+            new_node = new_node->search(pos_begin - 1);
+            new_node->right = right_side;
+            update_size_of_subtree(new_node);
+        }
+        else { // (right_side != nullptr)
+            new_node = right_side;
+        }
 
-        if (debug) {
+        if (debug2) {
             std::cout << "NEW: ";
-            new_node->print_sequence();
+            if (new_node != nullptr) new_node->print_sequence();
             std::cout << std::endl << "TEMP: ";
             temp->print_sequence();
             std::cout << std::endl;
+        }
+
+        if (pos_after == new_node->size_of_subtree + 1) {
+            new_node = new_node->search(pos_after - 1);
+            new_node->right = temp;
+            update_size_of_subtree(new_node);
+            return new_node;
         }
 
         new_node = new_node->search(pos_after);
         left_side = new_node->left;
         new_node->left = temp;
-        new_node->update_size_of_subtree();
+        update_size_of_subtree(new_node);
 
-        if (debug) {
+        if (debug2) {
             std::cout << "NEW: ";
-            new_node->print_sequence();
+            if (new_node != nullptr) new_node->print_sequence();
             std::cout << std::endl << "LEFT: ";
-            left_side->print_sequence();
+            if (left_side != nullptr) left_side->print_sequence();
             std::cout << std::endl;
         }
 
         new_node = new_node->search(1);
         new_node->left = left_side;
-        new_node->update_size_of_subtree();
+        update_size_of_subtree(new_node);
 
-        if (debug) {
+        if (debug2) {
+            std::cout << "NEW: ";
+            new_node->print_sequence();
+            std::cout << std::endl;
+        }
+
+        return new_node;
+    }
+
+    void rotate_recursive() {
+        std::swap(left, right);
+        if (left != nullptr)
+            left->rotate_recursive();
+        if (right != nullptr)
+            right->rotate_recursive();
+    }
+
+    Node *rotate(size_t pos_begin, size_t pos_end) {
+        if (pos_end - pos_begin + 1 == this->size_of_subtree) {
+            this->rotate_recursive();
+            return this;
+        }
+        size_t pos_after = pos_begin;
+
+        Node *temp = this->search(pos_end);
+
+        Node *left_side, *right_side;
+
+        right_side = temp->right;
+        temp->right = nullptr;
+        update_size_of_subtree(right_side);
+        update_size_of_subtree(temp);
+
+        temp = temp->search(pos_begin);
+
+        left_side = temp->left;
+        temp->left = nullptr;
+        update_size_of_subtree(left_side);
+        update_size_of_subtree(temp);
+
+        temp->rotate_recursive();
+
+        if (debug2) {
+            std::cout << "LEFT: ";
+            if (left_side != nullptr) left_side->print_sequence();
+            std::cout << std::endl << "TEMP: ";
+            temp->print_sequence();
+            std::cout << std::endl << "RIGHT: ";
+            if (right_side != nullptr) right_side->print_sequence();
+            std::cout << std::endl;
+        }
+
+        Node *new_node;
+        if (left_side != nullptr) {
+            new_node = left_side;
+            new_node = new_node->search(pos_begin - 1);
+            new_node->right = right_side;
+            update_size_of_subtree(new_node);
+        }
+        else { // (right_side != nullptr)
+            new_node = right_side;
+        }
+
+        if (debug2) {
+            std::cout << "NEW: ";
+            if (new_node != nullptr) new_node->print_sequence();
+            std::cout << std::endl << "TEMP: ";
+            temp->print_sequence();
+            std::cout << std::endl;
+        }
+
+        if (pos_after == new_node->size_of_subtree + 1) {
+            new_node = new_node->search(pos_after - 1);
+            new_node->right = temp;
+            update_size_of_subtree(new_node);
+            return new_node;
+        }
+
+        new_node = new_node->search(pos_after);
+        left_side = new_node->left;
+        new_node->left = temp;
+        update_size_of_subtree(new_node);
+
+        if (debug2) {
+            std::cout << "NEW: ";
+            if (new_node != nullptr) new_node->print_sequence();
+            std::cout << std::endl << "LEFT: ";
+            if (left_side != nullptr) left_side->print_sequence();
+            std::cout << std::endl;
+        }
+
+        new_node = new_node->search(1);
+        new_node->left = left_side;
+        update_size_of_subtree(new_node);
+
+        if (debug2) {
             std::cout << "NEW: ";
             new_node->print_sequence();
             std::cout << std::endl;
@@ -386,7 +505,12 @@ int main() {
 
     std::cout << "MOVE XDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD" << std::endl;
 
-    result = result->move(2, 2, 1);
+    result = result->move(1, 7, 1);
+    result->print_sequence();
+
+    std::cout << "ROTATE XDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD" << std::endl;
+
+    result = result->rotate(1, 7);
     result->print_sequence();
 
     std::cout << std::endl << "DONE" << std::endl;
