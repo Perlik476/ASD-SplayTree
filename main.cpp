@@ -2,7 +2,7 @@
 #include <cassert>
 #include <vector>
 
-const int debug = 1;
+const int debug = 0;
 
 template <typename V>
 class Node;
@@ -292,6 +292,72 @@ public:
             return node;
         }
     }
+
+    Node *move(size_t pos_begin, size_t pos_end, size_t pos_after) {
+        Node *temp = this->search(pos_end);
+
+        Node *left_side, *right_side;
+
+        right_side = temp->right;
+        temp->right = nullptr;
+        right_side->update_size_of_subtree();
+        temp->update_size_of_subtree();
+
+        temp = temp->search(pos_begin);
+
+        left_side = temp->left;
+        temp->left = nullptr;
+        left_side->update_size_of_subtree();
+        temp->update_size_of_subtree();
+
+        if (debug) {
+            std::cout << "LEFT: ";
+            left_side->print_sequence();
+            std::cout << std::endl << "TEMP: ";
+            temp->print_sequence();
+            std::cout << std::endl << "RIGHT: ";
+            right_side->print_sequence();
+            std::cout << std::endl;
+        }
+
+        Node *new_node = left_side;
+        new_node = new_node->search(pos_begin - 1);
+        new_node->right = right_side;
+        new_node->update_size_of_subtree();
+
+        if (debug) {
+            std::cout << "NEW: ";
+            new_node->print_sequence();
+            std::cout << std::endl << "TEMP: ";
+            temp->print_sequence();
+            std::cout << std::endl;
+        }
+
+        new_node = new_node->search(pos_after);
+        left_side = new_node->left;
+        new_node->left = temp;
+        new_node->update_size_of_subtree();
+
+        if (debug) {
+            std::cout << "NEW: ";
+            new_node->print_sequence();
+            std::cout << std::endl << "LEFT: ";
+            left_side->print_sequence();
+            std::cout << std::endl;
+        }
+
+        new_node = new_node->search(1);
+        new_node->left = left_side;
+        new_node->update_size_of_subtree();
+
+        if (debug) {
+            std::cout << "NEW: ";
+            new_node->print_sequence();
+            std::cout << std::endl;
+        }
+
+        return new_node;
+    }
 };
 
 
@@ -317,6 +383,13 @@ int main() {
     result = result->insert(10, 3);
     result->print_all();
     result->print_sequence();
+
+    std::cout << "MOVE XDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD" << std::endl;
+
+    result = result->move(2, 2, 1);
+    result->print_sequence();
+
+    std::cout << std::endl << "DONE" << std::endl;
 
 //    result = result->search(4);
 //    result->print_all();
