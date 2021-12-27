@@ -9,7 +9,7 @@ template <typename V>
 class Node;
 
 template <typename V>
-size_t get_max_subsequence(std::vector<V> seq);
+size_t get_max_subsequence(std::vector<V> seq, size_t pos_begin, size_t pos_end);
 
 template<typename V>
 size_t get_size_of_subtree(Node<V> *node) {
@@ -496,23 +496,18 @@ public:
 
     size_t max_subsequence(size_t pos_begin, size_t pos_end) {
         std::vector<V> seq = get_sequence();
-        std::cout << "ok" << std::endl;
-        for (auto &v : seq) {
-            std::cout << v << ", ";
-        }
-        std::cout << std::endl;
-        return get_max_subsequence(seq);
+        return get_max_subsequence(seq, pos_begin, pos_end);
     }
 };
 
 template <typename V>
-size_t get_max_subsequence(std::vector<V> seq) {
+size_t get_max_subsequence(std::vector<V> seq, size_t pos_begin, size_t pos_end) {
     if (seq.empty())
         return 0;
 
     size_t how_many_max = 1;
     size_t how_many_current = 1;
-    for (size_t i = 1; i < seq.size(); i++) {
+    for (size_t i = pos_begin; i < pos_end; i++) {
         if (seq[i] == seq[i - 1]) {
             how_many_current++;
             if (how_many_current > how_many_max) {
@@ -561,6 +556,7 @@ int main() {
     result->print_sequence();
 
     result = result->insert(0, 3);
+    result = result->insert(0, 3);
     result = result->insert(0, 1);
     result = result->insert(2, 6);
 
@@ -568,7 +564,7 @@ int main() {
 
     std::cout << "MAX SUBSEQUENCE XDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD" << std::endl;
 
-    std::cout << result->max_subsequence(2, 6) << std::endl;
+    std::cout << result->max_subsequence(1, 3) << std::endl;
 
     std::cout << std::endl << "DONE" << std::endl;
 
