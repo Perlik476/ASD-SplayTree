@@ -43,6 +43,7 @@ void update(Node<V> *node) {
         node->_update_max_subsequence_left();
         node->_update_max_subsequence_right();
         node->_update_max_subsequence();
+        node->_update_rotation();
     }
 }
 
@@ -51,6 +52,25 @@ void update_size_of_subtree(Node<V> *node) {
 //    if (node != nullptr)
 //        node->_update_size_of_subtree();
     update(node);
+}
+
+template<typename V>
+void change_rotation(Node<V> *node) {
+    if (node != nullptr) {
+        node->_change_rotation();
+    }
+}
+
+template<typename V>
+void update_rotation(Node<V> *node) {
+    update_rotation(node, true);
+}
+
+template<typename V>
+void update_rotation(Node<V> *node, bool deeper) {
+    if (node != nullptr) {
+        node->_update_rotation(deeper);
+    }
 }
 
 
@@ -63,10 +83,15 @@ class Node {
     size_t size_of_subtree;
     V max_right, max_left;
     size_t max_subsequence, max_subsequence_right, max_subsequence_left;
+    bool must_rotate;
 
     void rotate_right(Node *parent, Node *grand_parent) {
         if (debug) {std::cout << this->get_value() << "->rotate_right(" << parent->get_value() << ", "
             << (grand_parent != nullptr ? grand_parent->get_value() : -1) << ")" << std::endl;}
+        update_rotation(grand_parent);
+        update_rotation(parent);
+        update_rotation(this);
+
         assert(parent->left == this);
         parent->left = this->right;
         update(parent);
@@ -86,6 +111,10 @@ class Node {
     void rotate_left(Node *parent, Node *grand_parent) {
         if (debug) {std::cout << this->get_value() << "->rotate_left(" << parent->get_value() << ", "
                   << (grand_parent != nullptr ? grand_parent->get_value() : -1) << ")" << std::endl;}
+        update_rotation(grand_parent);
+        update_rotation(parent);
+        update_rotation(this);
+
         assert(parent->right == this);
         parent->right = this->left;
         update(parent);
@@ -183,6 +212,7 @@ public:
         max_subsequence = 1;
         max_subsequence_left = 1;
         max_subsequence_right = 1;
+        must_rotate = false;
     }
 
     ~Node() {
@@ -212,11 +242,11 @@ public:
 
     void _update_max_subsequence_right() {
         max_subsequence_right = get_max_subsequence_right(right)
-                + (get_max_subsequence_right(right) == get_size_of_subtree(right) ? (
-                    + (value == max_right ? (
-                        1 + (left == nullptr ? 0 : (left->max_right == max_right ? left->max_subsequence_right : 0))
-                    ) : 0)
-                ) : 0);
+            + (get_max_subsequence_right(right) == get_size_of_subtree(right) ? (
+                + (value == max_right ? (
+                    1 + (left == nullptr ? 0 : (left->max_right == max_right ? left->max_subsequence_right : 0))
+                ) : 0)
+            ) : 0);
     }
 
     void _update_max_subsequence_left() {
@@ -287,6 +317,10 @@ public:
         value = _value;
     }
 
+    void _change_rotation() {
+        must_rotate = 1 - must_rotate;
+    }
+
     size_t give_size_of_subtree() {
         return size_of_subtree;
     }
@@ -311,6 +345,7 @@ public:
 
     Node *search(size_t position, parents_t &parents) {
         assert(position >= 1);
+        update_rotation(this);
         if (debug) std::cout << "current: " << this->get_value() << std::endl;
         if (position < get_size_of_subtree(this->left) + 1) {
             if (this->left != nullptr) {
@@ -346,6 +381,7 @@ public:
 
     Node *insert(V v, size_t position, parents_t &parents) {
         assert(position >= 1);
+        update_rotation(this);
         Node *node = nullptr;
         if (debug) std::cout << "current: " << this->get_value() << ", " << get_size_of_subtree(this->left) + 1 << std::endl;
         if (position < get_size_of_subtree(this->left) + 1) {
@@ -487,8 +523,27 @@ public:
         update(this);
     }
 
+    void _update_rotation() {
+        _update_rotation(true);
+    }
+
+    void _update_rotation(bool deeper) {
+//        std::cout << "done" << std::endl;
+        if (must_rotate) {
+            _change_rotation();
+            change_rotation(left);
+            change_rotation(right);
+            std::swap(left, right);
+            std::swap(max_subsequence_right, max_subsequence_left);
+            std::swap(max_right, max_left);
+        }
+        if (deeper) {
+            update_rotation(left, false);
+            update_rotation(right, false);
+        }
+    }
+
     Node *rotate(size_t pos_begin, size_t pos_end) {
-//        if (debug) std::cerr << "ROTATE" << std::endl;
         if (pos_end - pos_begin + 1 == this->size_of_subtree) {
             this->rotate_recursive();
             return this;
@@ -511,7 +566,10 @@ public:
         update_size_of_subtree(left_side);
         update_size_of_subtree(temp);
 
-        temp->rotate_recursive();
+//        temp->rotate_recursive();
+        change_rotation(temp);
+        update_rotation(temp);
+
 
         if (debug2) {
             std::cout << "LEFT: ";
