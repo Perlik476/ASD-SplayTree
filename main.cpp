@@ -596,23 +596,32 @@ public:
         return get_max_subsequence(seq, pos_begin, pos_end);
     }
 
-    size_t subsequence(size_t pos_begin, size_t pos_end, size_t offset) {
-        size_t interval_begin = 1 + offset;
-        size_t interval_end = offset + size_of_subtree;
-        std::cout << "interval: " << interval_begin << ", " << interval_end << std::endl;
-        if (pos_begin <= interval_begin && interval_end <= pos_end) {
-            return max_subsequence;
-        }
-        else if (pos_begin > interval_end || pos_end < interval_begin) {
-            return 0;
-        }
-        else {
-            return (left != nullptr ? left->subsequence(pos_begin, pos_end, offset) : 0)
-                + (right != nullptr ? right->subsequence(pos_begin, pos_end, offset + get_size_of_subtree(left) + 1) : 0);
-        }
+    std::pair<size_t, Node *> subsequence(size_t pos_begin, size_t pos_end, size_t offset) {
+        Node *node = this;
+
+        node = node->search(pos_end);
+        Node *right_side = node->right;
+        node->right = nullptr;
+        update(node);
+
+        node = node->search(pos_begin);
+        Node *left_side = node->left;
+        node->left = nullptr;
+        update(node);
+
+        size_t result = get_max_subsequence(node);
+
+        node->left = left_side;
+        update(node);
+
+        node = node->search(pos_end);
+        node->right = right_side;
+        update(node);
+
+        return {result, node};
     }
 
-    size_t subsequence(size_t pos_begin, size_t pos_end) {
+    std::pair<size_t, Node *> subsequence(size_t pos_begin, size_t pos_end) {
         return subsequence(pos_begin, pos_end, 0);
     }
 };
@@ -656,8 +665,8 @@ int main() {
     root = root->search(1);
 
     for (int i = 0; i < m; i++) {
-        root->print_sequence();
-        root->print_all();
+//        root->print_sequence();
+//        root->print_all();
         char c;
         std::cin >> c;
         int j, k, l;
@@ -670,7 +679,9 @@ int main() {
             root = root->rotate(j, k);
         }
         else { // c == 'N'
-            std::cout << root->subsequence(j, k) << std::endl;
+            auto pair = root->subsequence(j, k);
+            root = pair.second;
+            std::cout << pair.first << std::endl;
         }
     }
 
