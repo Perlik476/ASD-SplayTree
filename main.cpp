@@ -5,11 +5,14 @@
 const int debug = 0;
 const int debug2 = 0;
 
+
 template <typename V>
 class Node;
 
+
 template <typename V>
 size_t get_max_subsequence(std::vector<V> seq, size_t pos_begin, size_t pos_end);
+
 
 template<typename V>
 size_t get_size_of_subtree(Node<V> *node) {
@@ -17,10 +20,39 @@ size_t get_size_of_subtree(Node<V> *node) {
 }
 
 template<typename V>
-void update_size_of_subtree(Node<V> *node) {
-    if (node != nullptr)
-        node->_update_size_of_subtree();
+size_t get_max_subsequence_right(Node <V> *node) {
+    return node == nullptr ? 0 : node->give_max_subsequence_right();
 }
+
+template<typename V>
+size_t get_max_subsequence_left(Node <V> *node) {
+    return node == nullptr ? 0 : node->give_max_subsequence_left();
+}
+
+template<typename V>
+size_t get_max_subsequence(Node <V> *node) {
+    return node == nullptr ? 0 : node->give_max_subsequence();
+}
+
+template<typename V>
+void update(Node<V> *node) {
+    if (node != nullptr) {
+        node->_update_size_of_subtree();
+        node->_update_max_left();
+        node->_update_max_right();
+        node->_update_max_subsequence_left();
+        node->_update_max_subsequence_right();
+        node->_update_max_subsequence();
+    }
+}
+
+template<typename V>
+void update_size_of_subtree(Node<V> *node) {
+//    if (node != nullptr)
+//        node->_update_size_of_subtree();
+    update(node);
+}
+
 
 template <typename V>
 class Node {
@@ -29,15 +61,17 @@ class Node {
     Node *right, *left;
     V value;
     size_t size_of_subtree;
+    V max_right, max_left;
+    size_t max_subsequence, max_subsequence_right, max_subsequence_left;
 
     void rotate_right(Node *parent, Node *grand_parent) {
         if (debug) {std::cout << this->get_value() << "->rotate_right(" << parent->get_value() << ", "
             << (grand_parent != nullptr ? grand_parent->get_value() : -1) << ")" << std::endl;}
         assert(parent->left == this);
         parent->left = this->right;
-        parent->_update_size_of_subtree();
+        update(parent);
         this->right = parent;
-        this->_update_size_of_subtree();
+        update(this);
         if (grand_parent != nullptr) {
             assert(grand_parent->left == parent || grand_parent->right == parent);
             if (grand_parent->left == parent) {
@@ -54,9 +88,9 @@ class Node {
                   << (grand_parent != nullptr ? grand_parent->get_value() : -1) << ")" << std::endl;}
         assert(parent->right == this);
         parent->right = this->left;
-        parent->_update_size_of_subtree();
+        update(parent);
         this->left = parent;
-        this->_update_size_of_subtree();
+        update(this);
         if (grand_parent != nullptr) {
             assert(grand_parent->left == parent || grand_parent->right == parent);
             if (grand_parent->left == parent) {
@@ -144,6 +178,11 @@ public:
         right = nullptr;
         left = nullptr;
         size_of_subtree = 1;
+        max_right = value;
+        max_left = value;
+        max_subsequence = 1;
+        max_subsequence_left = 1;
+        max_subsequence_right = 1;
     }
 
     ~Node() {
@@ -152,6 +191,43 @@ public:
 
     void _update_size_of_subtree() {
         size_of_subtree = 1 + get_size_of_subtree(right) + get_size_of_subtree(left);
+    }
+
+    void _update_max_left() {
+        max_left = left != nullptr ? left->max_left : value;
+    }
+
+    void _update_max_right() {
+//        std::cerr << "max_right\n";
+        max_right = right != nullptr ? right->max_right : value;
+//        std::cerr << "fin\n";
+    }
+
+
+    void _update_max_subsequence() {
+//        std::cerr << "max_sub\n";
+        max_subsequence = std::max(
+            left != nullptr ? left->max_subsequence : 1, std::max(
+            right != nullptr ? right->max_subsequence : 1,
+            1 + (left != nullptr ? (left->max_right == value) * left->max_subsequence_right : 0)
+              + (right != nullptr ? (right->max_left == value) * right->max_subsequence_left : 0)));
+//        std::cerr << "fin\n";
+    }
+
+    void _update_max_subsequence_right() {
+        max_subsequence_right = get_max_subsequence_right(right)
+                + (get_max_subsequence_right(right) == get_size_of_subtree(right) ? (
+                    + (value == max_right ? 1
+                        + (left == nullptr ? 0 : (left->max_right == max_right ? left->max_subsequence_right : 0)) : 0)
+                ) : 0);
+    }
+
+    void _update_max_subsequence_left() {
+        max_subsequence_left = get_max_subsequence_left(left)
+            + (get_max_subsequence_left(left) == get_size_of_subtree(left) ? (
+                + (value == max_left ? 1
+                    + (right == nullptr ? 0 : (right->max_left == max_left ? right->max_subsequence_left : 0)) : 0)
+            ) : 0);
     }
 
     void set_left(Node *node) {
@@ -175,8 +251,10 @@ public:
     }
 
     void print() {
-        std::cout << value << ": left: " << (left != nullptr ? left->get_value() : -1) << ", right: "
-            << (right != nullptr ? right->get_value() : -1) << ", subtree: " << size_of_subtree << std::endl;
+        std::cout << value << ": left: " << (left != nullptr ? left->get_value() : ' ') << ", right: "
+            << (right != nullptr ? right->get_value() : ' ') << ", subtree: " << size_of_subtree
+            << ", max_left: " << max_left << ", max_right: " << max_right << ", max_sub: " << max_subsequence
+            << ", max_sub_left: " << max_subsequence_left << ", max_sub_right: " << max_subsequence_right << std::endl;
     }
 
     void print_all() {
@@ -195,11 +273,16 @@ public:
     }
 
     void print_sequence() {
+        _print_sequence();
+        std::cout << std::endl;
+    }
+
+    void _print_sequence() {
         if (left != nullptr)
-            left->print_sequence();
+            left->_print_sequence();
         std::cout << this->value << ", ";
         if (right != nullptr)
-            right->print_sequence();
+            right->_print_sequence();
     }
 
     void set_value(V _value) {
@@ -208,6 +291,18 @@ public:
 
     size_t give_size_of_subtree() {
         return size_of_subtree;
+    }
+
+    size_t give_max_subsequence() {
+        return max_subsequence;
+    }
+
+    size_t give_max_subsequence_right() {
+        return max_subsequence_right;
+    }
+
+    size_t give_max_subsequence_left() {
+        return max_subsequence_left;
     }
 
     Node *search(size_t position) {
@@ -288,8 +383,8 @@ public:
             node->right = this;
             node->left = this->left;
             this->left = nullptr;
-            this->_update_size_of_subtree();
-            node->_update_size_of_subtree();
+            update_size_of_subtree(this);
+            update_size_of_subtree(node);
             if (!parents.empty()) {
                 if (parents[parents.size() - 1]->get_left() == this)
                     parents[parents.size() - 1]->left = node;
@@ -391,9 +486,11 @@ public:
             left->rotate_recursive();
         if (right != nullptr)
             right->rotate_recursive();
+        update(this);
     }
 
     Node *rotate(size_t pos_begin, size_t pos_end) {
+//        if (debug) std::cerr << "ROTATE" << std::endl;
         if (pos_end - pos_begin + 1 == this->size_of_subtree) {
             this->rotate_recursive();
             return this;
@@ -494,9 +591,29 @@ public:
             right->get_sequence(seq);
     }
 
-    size_t max_subsequence(size_t pos_begin, size_t pos_end) {
+    size_t subsequence2(size_t pos_begin, size_t pos_end) {
         std::vector<V> seq = get_sequence();
         return get_max_subsequence(seq, pos_begin, pos_end);
+    }
+
+    size_t subsequence(size_t pos_begin, size_t pos_end, size_t offset) {
+        size_t interval_begin = 1 + offset;
+        size_t interval_end = offset + size_of_subtree;
+        std::cout << "interval: " << interval_begin << ", " << interval_end << std::endl;
+        if (pos_begin <= interval_begin && interval_end <= pos_end) {
+            return max_subsequence;
+        }
+        else if (pos_begin > interval_end || pos_end < interval_begin) {
+            return 0;
+        }
+        else {
+            return (left != nullptr ? left->subsequence(pos_begin, pos_end, offset) : 0)
+                + (right != nullptr ? right->subsequence(pos_begin, pos_end, offset + get_size_of_subtree(left) + 1) : 0);
+        }
+    }
+
+    size_t subsequence(size_t pos_begin, size_t pos_end) {
+        return subsequence(pos_begin, pos_end, 0);
     }
 };
 
@@ -535,9 +652,12 @@ int main() {
     for (int i = 2; i <= n; i++) {
         root = root->insert(s[i - 1], i);
     }
-//    root->print_sequence();
+
+    root = root->search(1);
 
     for (int i = 0; i < m; i++) {
+        root->print_sequence();
+        root->print_all();
         char c;
         std::cin >> c;
         int j, k, l;
@@ -550,7 +670,7 @@ int main() {
             root = root->rotate(j, k);
         }
         else { // c == 'N'
-            std::cout << root->max_subsequence(j, k) << std::endl;
+            std::cout << root->subsequence(j, k) << std::endl;
         }
     }
 
@@ -627,3 +747,8 @@ int main() {
 
     return 0;
 }
+
+/**
+13 10
+BABABBAAAAAAA
+ */
