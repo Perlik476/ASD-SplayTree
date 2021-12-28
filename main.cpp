@@ -657,7 +657,7 @@ int main() {
     std::string s;
     std::cin >> s;
 
-    auto *root = new Node(s[0]);
+    auto *root = new Node<char>(s[0]);
     for (int i = 2; i <= n; i++) {
         root = root->insert(s[i - 1], i);
     }
