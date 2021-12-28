@@ -198,35 +198,33 @@ public:
     }
 
     void _update_max_right() {
-//        std::cerr << "max_right\n";
         max_right = right != nullptr ? right->max_right : value;
-//        std::cerr << "fin\n";
     }
 
 
     void _update_max_subsequence() {
-//        std::cerr << "max_sub\n";
         max_subsequence = std::max(
             left != nullptr ? left->max_subsequence : 1, std::max(
             right != nullptr ? right->max_subsequence : 1,
             1 + (left != nullptr ? (left->max_right == value) * left->max_subsequence_right : 0)
               + (right != nullptr ? (right->max_left == value) * right->max_subsequence_left : 0)));
-//        std::cerr << "fin\n";
     }
 
     void _update_max_subsequence_right() {
         max_subsequence_right = get_max_subsequence_right(right)
                 + (get_max_subsequence_right(right) == get_size_of_subtree(right) ? (
-                    + (value == max_right ? 1
-                        + (left == nullptr ? 0 : (left->max_right == max_right ? left->max_subsequence_right : 0)) : 0)
+                    + (value == max_right ? (
+                        1 + (left == nullptr ? 0 : (left->max_right == max_right ? left->max_subsequence_right : 0))
+                    ) : 0)
                 ) : 0);
     }
 
     void _update_max_subsequence_left() {
         max_subsequence_left = get_max_subsequence_left(left)
             + (get_max_subsequence_left(left) == get_size_of_subtree(left) ? (
-                + (value == max_left ? 1
-                    + (right == nullptr ? 0 : (right->max_left == max_left ? right->max_subsequence_left : 0)) : 0)
+                + (value == max_left ? (
+                    1 + (right == nullptr ? 0 : (right->max_left == max_left ? right->max_subsequence_left : 0))
+                ) : 0)
             ) : 0);
     }
 
