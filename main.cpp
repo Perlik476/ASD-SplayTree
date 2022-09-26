@@ -49,8 +49,6 @@ void update(Node<V> *node) {
 
 template<typename V>
 void update_size_of_subtree(Node<V> *node) {
-//    if (node != nullptr)
-//        node->_update_size_of_subtree();
     update(node);
 }
 
@@ -528,7 +526,6 @@ public:
     }
 
     void _update_rotation(bool deeper) {
-//        std::cout << "done" << std::endl;
         if (must_rotate) {
             _change_rotation();
             change_rotation(left);
@@ -566,7 +563,6 @@ public:
         update_size_of_subtree(left_side);
         update_size_of_subtree(temp);
 
-//        temp->rotate_recursive();
         change_rotation(temp);
         update_rotation(temp);
 
@@ -721,8 +717,6 @@ int main() {
     root = root->search(1);
 
     for (int i = 0; i < m; i++) {
-//        root->print_sequence();
-//        root->print_all();
         char c;
         std::cin >> c;
         int j, k, l;
@@ -740,77 +734,6 @@ int main() {
             std::cout << pair.first << std::endl;
         }
     }
-
-
-
-
-
-
-//    auto *root = new Node(5);
-//    root = root->insert(7, 1);
-//    root = root->insert(2, 2);
-//    root = root->insert(1, 3);
-//    root = root->insert(4, 4);
-//    root = root->insert(0, 5);
-//
-//    root->print_all();
-//
-//    std::cout << "SEARCH XDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD:" << std::endl;
-//
-//    Node<int> *result = root->search(5);
-//    result->print_all();
-//    result->print_sequence();
-//
-//    std::cout << "INSERT XDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD:" << std::endl;
-//
-//    result = result->insert(10, 3);
-//    result->print_all();
-//    result->print_sequence();
-//
-//    std::cout << "MOVE XDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD" << std::endl;
-//
-//    result = result->move(1, 7, 1);
-//    result->print_sequence();
-//
-//    std::cout << "ROTATE XDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD" << std::endl;
-//
-//    result = result->rotate(1, 7);
-//    result->print_sequence();
-//
-//    result = result->insert(0, 3);
-//    result = result->insert(0, 3);
-//    result = result->insert(0, 1);
-//    result = result->insert(2, 6);
-//
-//    result->print_sequence();
-//
-//    std::cout << "MAX SUBSEQUENCE XDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD" << std::endl;
-//
-//    std::cout << result->max_subsequence(1, 3) << std::endl;
-//
-//    std::cout << std::endl << "DONE" << std::endl;
-
-//    result = result->search(4);
-//    result->print_all();
-//
-//    result = result->insert(3);
-//    result->print_all();
-//
-//    result = result->insert(10);
-//    result = result->insert(21);
-//    result = result->insert(37);
-//    result = result->search(7);
-//    result->print_all();
-//
-//    int M = 100000;
-//    srand(time(0));
-//    for (int i = 1; i < M; i++) {
-//        result = result->insert(rand()%M);
-//    }
-//    result->print_all();
-//    result = result->search(40);
-//    result->print_all();
-//    std::cout << left.get_right()->get_value();
 
     return 0;
 }
