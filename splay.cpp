@@ -3,12 +3,8 @@
 #include <vector>
 #include "splay.hpp"
 
-int counter = 0;
-
 template <typename V>
 void Node<V>::rotate_right() {
-    if (counter < 10) std::cout << "right\n";
-    if (counter < 10) print();
     assert(parent->left == this);
 
     auto grandparent = parent->parent;
@@ -32,14 +28,10 @@ void Node<V>::rotate_right() {
             grandparent->right = this;
         }
     }
-
-    if (counter < 10) print();
 }
 
 template <typename V>
 void Node<V>::rotate_left() {
-    if (counter < 10) std::cout << "left\n";
-    if (counter < 10) print();
     assert(parent->right == this);
 
     auto grandparent = parent->parent;
@@ -63,20 +55,10 @@ void Node<V>::rotate_left() {
             grandparent->right = this;
         }
     }
-
-    if (counter < 10) print();
 }
 
 template <typename V>
 void Node<V>::local_splay() {
-    if (counter < 5) {
-        std::cout << "splay in "; 
-        this->print();
-        std::cout << "all:\n";
-        this->parent->print_all();
-        counter++;
-    }
-
     auto grandparent = parent->parent;
 
     if (grandparent == nullptr) { // node's parent is root
@@ -249,19 +231,14 @@ Node<V> *Node<V>::insert(V v) {
 
 int main() {
     Node<int> root = Node(5);
-    root.print_all();
     Node<int> right = Node(7);
     Node<int> left = Node(2);
     root.set_right(&right);
     root.set_left(&left);
-    // root.insert(&right);
-    // root.insert(&left);
-    root.print_all();
     Node<int> left_left = Node(1);
     Node<int> left_right = Node(4);
     left.set_left(&left_left);
     left.set_right(&left_right);
-    root.print_all();
     Node<int> left_left_left = Node(0);
     left_left.set_left(&left_left_left);
     root.print_all();
