@@ -10,15 +10,12 @@ class Node {
     V value;
 
     void rotate_right(Node *parent, Node *grand_parent) {
-        std::cout << this->get_value() << "->rotate_right(" << parent->get_value() << ", "
-            << (grand_parent != nullptr ? grand_parent->get_value() : -1) << ")" << std::endl;
         assert(parent->left == this);
-//        std::cout << "parent->left: " << parent->get_value() << ": " << (parent->left != nullptr ? parent->left->get_value() : -1) << std::endl;
+
         parent->left = this->right;
-//        std::cout << "parent->left: " << parent->get_value() << ": " << (parent->left != nullptr ? parent->left->get_value() : -1) << std::endl;
         this->right = parent;
+
         if (grand_parent != nullptr) {
-//            assert(grand_parent->left == parent || grand_parent->right == parent);
             if (grand_parent->left == parent) {
                 grand_parent->left = this;
             }
@@ -29,11 +26,11 @@ class Node {
     }
 
     void rotate_left(Node *parent, Node *grand_parent) {
-        std::cout << this->get_value() << "->rotate_left(" << parent->get_value() << ", "
-                  << (grand_parent != nullptr ? grand_parent->get_value() : -1) << ")" << std::endl;
         assert(parent->right == this);
+
         parent->right = this->left;
         this->left = parent;
+
         if (grand_parent != nullptr) {
             assert(grand_parent->left == parent || grand_parent->right == parent);
             if (grand_parent->left == parent) {
@@ -45,54 +42,50 @@ class Node {
         }
     }
 
-    size_t static local_splay(Node *node, parents_t parents, size_t index) {
-        std::cout << "local_splay(" << node->get_value() << ", " << parents.size() << ", " << index << ") " << std::endl;
-        if (index == 0) { // ojciec node'a to root
-            parents[index]->print();
-            assert(parents[index]->get_left() == node || parents[index]->get_right() == node);
-            if (parents[index]->get_left() == node) {
-                node->rotate_right(parents[index], nullptr);
+    size_t local_splay(parents_t parents, size_t parent_index) {
+        if (parent_index == 0) { // node's parent is root
+            auto parent = parents[parent_index];
+
+            assert(parent->get_left() == this || parent->get_right() == this);
+
+            if (parent->get_left() == this) {
+                rotate_right(parent, nullptr);
             }
             else {
-                node->rotate_left(parents[index], nullptr);
+                rotate_left(parent, nullptr);
             }
             return 1;
         }
         else {
-            if (parents[index]->get_left() == node && parents[index - 1]->get_left() == parents[index]) {
-                std::cout << "double_right" << std::endl;
-                parents[index]->rotate_right(parents[index - 1], index - 1 > 0 ? parents[index - 2] : nullptr);
-                node->rotate_right(parents[index], index - 1 > 0 ? parents[index - 2] : nullptr);
+            auto parent = parents[parent_index];
+            auto grandparent = parents[parent_index - 1];
+            auto grandgrandparent = parent_index - 1 > 0 ? parents[parent_index - 2] : nullptr;
+
+            if (parent->get_left() == this && grandparent->get_left() == parent) {
+                parent->rotate_right(grandparent, parent_index - 1 > 0 ? grandgrandparent : nullptr);
+                rotate_right(parent, grandgrandparent);
             }
-            else if (parents[index]->get_right() == node && parents[index - 1]->get_right() == parents[index]) {
-                std::cout << "double_left" << std::endl;
-                parents[index]->rotate_left(parents[index - 1], index - 1 > 0 ? parents[index - 2] : nullptr);
-                node->rotate_left(parents[index], index - 1 > 0 ? parents[index - 2] : nullptr);
+            else if (parent->get_right() == this && grandparent->get_right() == parent) {
+                parent->rotate_left(grandparent, parent_index - 1 > 0 ? grandgrandparent : nullptr);
+                rotate_left(parent, grandgrandparent);
             }
-            else if (parents[index]->get_right() == node && parents[index - 1]->get_left() == parents[index]) {
-                std::cout << "left_right" << std::endl;
-                node->rotate_left(parents[index], parents[index - 1]);
-                node->rotate_right(parents[index - 1], index - 1 > 0 ? parents[index - 2] : nullptr);
+            else if (parent->get_right() == this && grandparent->get_left() == parent) {
+                rotate_left(parent, grandparent);
+                rotate_right(grandparent, grandgrandparent);
             }
-            else if (parents[index]->get_left() == node && parents[index - 1]->get_right() == parents[index]) {
-                std::cout << "right_left" << std::endl;
-                node->rotate_right(parents[index], parents[index - 1]);
-                node->rotate_left(parents[index - 1], index - 1 > 0 ? parents[index - 2] : nullptr);
+            else if (parent->get_left() == this && grandparent->get_right() == parent) {
+                rotate_right(parent, grandparent);
+                rotate_left(grandparent, grandgrandparent);
             }
             return 2;
         }
     }
 
-    void static splay(Node *node, parents_t &parents, size_t index) {
-        std::cout << "splay" << std::endl;
+    void splay(parents_t &parents) {
+        size_t index = parents.size() - 1;
         while (index + 1 != 0) {
-            std::cout << std::endl;
-            parents[0]->print_all();
-            std::cout << std::endl;
-
-            index -= local_splay(node, parents, index);
+            index -= local_splay(parents, index);
         }
-        std::cout << "splay: end" << std::endl;
     }
 
 public:
@@ -126,14 +119,19 @@ public:
             << (right != nullptr ? right->get_value() : -1) << std::endl;
     }
 
-    void print_all() {
+    void _print_all() {
         print();
         if (left != nullptr) {
-            left->print_all();
+            left->_print_all();
         }
         if (right != nullptr) {
-            right->print_all();
+            right->_print_all();
         }
+    }
+
+    void print_all() {
+        _print_all();
+        std::cout << std::endl;
     }
 
     void set_value(V _value) {
@@ -147,14 +145,13 @@ public:
     }
 
     Node *search(V v, parents_t &parents) {
-        std::cout << "current: " << this->get_value() << std::endl;
         if (v < this->value) {
             if (this->left != nullptr) {
                 parents.push_back(this);
                 return this->left->search(v, parents);
             }
             else {
-                splay(this, parents, parents.size() - 1);
+                splay(parents);
                 return nullptr;
             }
         }
@@ -164,12 +161,12 @@ public:
                 return this->right->search(v, parents);
             }
             else {
-                splay(this, parents, parents.size() - 1);
+                splay(parents);
                 return nullptr;
             }
         }
         else {
-            splay(this, parents, parents.size() - 1);
+            splay(parents);
             return this;
         }
     }
@@ -182,7 +179,6 @@ public:
 
     Node *insert(V v, parents_t &parents) {
         Node *node = nullptr;
-        std::cout << "current: " << this->get_value() << std::endl;
         if (v < this->value) {
             if (this->left != nullptr) {
                 parents.push_back(this);
@@ -192,7 +188,7 @@ public:
                 parents.push_back(this);
                 node = new Node(v);
                 this->left = node;
-                splay(node, parents, parents.size() - 1);
+                node->splay(parents);
                 return node;
             }
         }
@@ -205,12 +201,12 @@ public:
                 parents.push_back(this);
                 node = new Node(v);
                 this->right = node;
-                splay(node, parents, parents.size() - 1);
+                node->splay(parents);
                 return node;
             }
         }
         else {
-            splay(this, parents, parents.size() - 1);
+            splay(parents);
             return this;
         }
     }
@@ -237,6 +233,9 @@ int main() {
     result->print_all();
 
     result = result->insert(3);
+    result->print_all();
+
+    result = result->search(5);
     result->print_all();
 //    std::cout << left.get_right()->get_value();
 
