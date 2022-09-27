@@ -299,6 +299,18 @@ public:
         }
     }
 
+    void get_previous(std::stack<node_ptr_t> &traversal) {
+        if (left != nullptr) {
+            auto node = left;
+
+            while (node->right != nullptr) {
+                traversal.push(node);
+                node = node->right;
+            }
+            traversal.push(node);
+        }
+    }
+
     node_ptr_t unpin_left_subtree() {
         auto node = left;
         if (node != nullptr) {
@@ -326,8 +338,20 @@ class SplayTree {
 
     node_ptr_t root;
 
+    template<bool increasing_direction>
     class Iterator {
         std::stack<node_ptr_t> traversal;
+
+        void next() {
+            node_ptr_t node = traversal.top();
+            traversal.pop();
+            if (increasing_direction) {
+                node->get_next(traversal);
+            }
+            else {
+                node->get_previous(traversal);
+            }
+        }
 
     public:
         using iterator_category = std::input_iterator_tag;
@@ -341,9 +365,17 @@ class SplayTree {
         explicit Iterator(SplayTree *splay) {
             auto node = splay->root;
 
-            while (node != nullptr) {
-                traversal.push(node);
-                node = node->get_left();
+            if (increasing_direction) {
+                while (node != nullptr) {
+                    traversal.push(node);
+                    node = node->get_left();
+                }
+            }
+            else {
+                while (node != nullptr) {
+                    traversal.push(node);
+                    node = node->get_right();
+                }
             }
         }
 
@@ -369,19 +401,13 @@ class SplayTree {
         }
 
         Iterator &operator++() {
-            node_ptr_t node = traversal.top();
-            traversal.pop();
-            node->get_next(traversal);
+            next();
             return *this;
         }
 
         Iterator operator++(int) {
             Iterator temp = *this;
-
-            node_ptr_t node = traversal.top();
-            traversal.pop();
-            node->get_next(traversal);
-
+            next();
             return temp;
         }
     };
@@ -399,12 +425,20 @@ public:
         }
     }
 
-    Iterator begin() {
-        return Iterator(this);
+    Iterator<true> begin() {
+        return Iterator<true>(this);
     }
 
-    Iterator end() {
-        return Iterator(std::stack<node_ptr_t>());
+    Iterator<true> end() {
+        return Iterator<true>(std::stack<node_ptr_t>());
+    }
+
+    Iterator<false> rbegin() {
+        return Iterator<false>(this);
+    }
+
+    Iterator<false> rend() {
+        return Iterator<false>(std::stack<node_ptr_t>());
     }
 
     void insert(V value) {

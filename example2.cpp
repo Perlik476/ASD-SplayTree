@@ -1,5 +1,6 @@
 #include <iostream>
 #include "splay.h"
+#include <ranges>
 
 int main() {
     auto splay = SplayTree<int>({2, 1, 3, 7, 10, 5});
@@ -38,6 +39,13 @@ int main() {
     std::cout << "at least 8: ";
     for (auto x : splay) {
         std::cout << x << " ";
+    }
+    std::cout << "\n";
+
+    std::cout << "min: " << *splay.begin() << ", max: " << *splay.rbegin() << "\n";
+
+    for (auto it = splay.rbegin(); it != splay.rend(); it++) {
+        std::cout << *it << " ";
     }
     std::cout << "\n";
 
