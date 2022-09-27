@@ -2,6 +2,9 @@
 #include "splay.h"
 
 int main() {
+    // auto splay = SplayTree({2, 1, 3, 7});
+
+
     auto root = std::make_shared<Node<int>>(5);
     auto right = std::make_shared<Node<int>>(7);
     auto left = std::make_shared<Node<int>>(2);
@@ -28,8 +31,12 @@ int main() {
     result->print_all();
 //    std::cout << left.get_right()->get_value();
 
-    Node<char> n = Node('a');
-    Node<std::vector<int>> n2 = Node(std::vector<int>());
+    result = result->remove(1);
+    result->print_all();
+
+    result = result->remove(4);
+    result->print_all();
+
 
     return 0;
 }

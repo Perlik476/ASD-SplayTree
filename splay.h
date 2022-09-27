@@ -20,10 +20,10 @@ class Node : public std::enable_shared_from_this<Node<V>> {
         auto grandparent = parent->parent;
         auto current_parent = parent;
 
-        current_parent->set_left(this->right);
-        this->set_right(current_parent);
+        current_parent->set_left(right);
+        set_right(current_parent);
 
-        this->parent = grandparent;
+        parent = grandparent;
         
         if (grandparent != nullptr) {
             if (grandparent->left == current_parent) {
@@ -41,10 +41,10 @@ class Node : public std::enable_shared_from_this<Node<V>> {
         auto grandparent = parent->parent;
         auto current_parent = parent;
 
-        current_parent->set_right(this->left);
-        this->set_left(current_parent);
+        current_parent->set_right(left);
+        set_left(current_parent);
 
-        this->parent = grandparent;     
+        parent = grandparent;     
 
         if (grandparent != nullptr) {
             if (grandparent->left == current_parent) {
@@ -158,18 +158,18 @@ public:
     }
 
     inline node_ptr_t search(V v) {
-        if (v < this->value) {
-            if (this->left != nullptr) {
-                return this->left->search(v);
+        if (v < value) {
+            if (left != nullptr) {
+                return left->search(v);
             }
             else {
                 splay();
                 return nullptr;
             }
         }
-        else if (v > this->value) {
-            if (this->right != nullptr) {
-                return this->right->search(v);
+        else if (v > value) {
+            if (right != nullptr) {
+                return right->search(v);
             }
             else {
                 splay();
@@ -184,29 +184,28 @@ public:
 
     inline node_ptr_t insert(V v) {
         node_ptr_t node = nullptr;
-        if (v < this->value) {
-            if (this->left != nullptr) {
-                return this->left->insert(v);
+
+        if (v < value) {
+            if (left != nullptr) {
+                return left->insert(v);
             }
             else {
                 node = std::make_shared<Node<V>>(v);
 
-                this->set_left(node);
-
+                set_left(node);
                 node->splay();
 
                 return node;
             }
         }
-        else if (v > this->value) {
-            if (this->right != nullptr) {
-                return this->right->insert(v);
+        else if (v > value) {
+            if (right != nullptr) {
+                return right->insert(v);
             }
             else {
                 node = std::make_shared<Node<V>>(v);
 
-                this->set_right(node);
-                
+                set_right(node);
                 node->splay();
 
                 return node;
@@ -217,9 +216,123 @@ public:
             return get_ptr();
         }
     }
+
+    inline node_ptr_t remove(V v) {
+        if (v < value) {
+            if (left != nullptr) {
+                return left->remove(v);
+            }
+            else {
+                splay();
+
+                return get_ptr();
+            }
+        }
+        else if (v > value) {
+            if (right != nullptr) {
+                return right->remove(v);
+            }
+            else {
+                splay();
+
+                return get_ptr();
+            }
+        }
+        else {
+            node_ptr_t new_root = parent;
+
+            if (left == nullptr && right == nullptr) {
+                if (parent != nullptr) {
+                    if (parent->left == get_ptr()) {
+                        parent->left = nullptr;
+                    }
+                    else {
+                        parent->right = nullptr;
+                    }
+                }
+            }
+            else if ((left != nullptr && right == nullptr) || (right != nullptr && left == nullptr)) {
+                node_ptr_t child = left == nullptr ? right : left;
+
+                if (parent == nullptr) {
+                    new_root = child;
+                }
+                else if (parent->left == get_ptr()) {
+                    parent->set_left(child);
+                }
+                else {
+                    parent->set_right(child);
+                }
+            }
+            else {
+                node_ptr_t node = left;
+                while (node->right != nullptr) {
+                    node = node->right;
+                }
+
+                set_value(node->get_value());
+                if (node == left) {
+                    set_left(node->left);
+                }
+                else {
+                    node->parent->set_right(node->left);
+                }
+            }
+
+            if (new_root != nullptr) {
+                new_root->splay();
+            }
+
+            return new_root;
+        }
+    }
 };
 
 template<typename V>
 class SplayTree {
-    std::shared_ptr<Node<V>> root;
+    using node_ptr_t = std::shared_ptr<Node<V>>;
+
+    node_ptr_t root;
+
+public:
+    SplayTree() {
+        root = nullptr;
+    }
+
+    SplayTree(std::initializer_list<V> list) {
+        for (V value : list) {
+            insert(value);
+        }
+    }
+
+    void insert(V value) {
+        if (root == nullptr) {
+            root = std::make_shared<Node<V>>(value);
+        }
+        else {
+            root = root->insert(value);
+        }
+    }
+
+    bool contains(V value) {
+        if (root == nullptr) {
+            return false;
+        }
+
+        root = root->search(value);
+        return root->get_value() == value;
+    }
+
+    void remove(V value) {
+        if (root == nullptr) {
+            return;
+        }
+        else {
+            root = root->remove(value);
+        }
+    }
+
+    // class Iterator : public std::iterator<std::bidirectional_iterator_tag, V, std::ptrdiff_t, V *, V &> {
+
+    // }
 };
