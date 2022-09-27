@@ -4,337 +4,354 @@
 #include <memory>
 #include <stack>
 
-template <typename V>
-class Node : public std::enable_shared_from_this<Node<V>> {
-    using node_ptr_t = std::shared_ptr<Node<V>>;
-
-    node_ptr_t right, left, parent;
-    V value;
-
-    node_ptr_t get_ptr() {
-        return this->shared_from_this();
-    }
-
-    void rotate_right() {
-        assert(parent->left == get_ptr());
-
-        auto grandparent = parent->parent;
-        auto current_parent = parent;
-
-        current_parent->set_left(right);
-        set_right(current_parent);
-
-        parent = grandparent;
-        
-        if (grandparent != nullptr) {
-            if (grandparent->left == current_parent) {
-                grandparent->left = get_ptr();
-            }
-            else {
-                grandparent->right = get_ptr();
-            }
-        }
-    }
-
-    void rotate_left() {
-        assert(parent->right == get_ptr());
-
-        auto grandparent = parent->parent;
-        auto current_parent = parent;
-
-        current_parent->set_right(left);
-        set_left(current_parent);
-
-        parent = grandparent;     
-
-        if (grandparent != nullptr) {
-            if (grandparent->left == current_parent) {
-                grandparent->left = get_ptr();
-            }
-            else {
-                grandparent->right = get_ptr();
-            }
-        }
-    }
-
-    void local_splay() {
-        auto grandparent = parent->parent;
-        auto ptr = get_ptr();
-
-        if (grandparent == nullptr) {
-            assert(parent->get_left() == get_ptr() || parent->get_right() == get_ptr());
-
-            if (parent->get_left() == get_ptr()) {
-                rotate_right();
-            }
-            else {
-                rotate_left();
-            }
-        }
-        else {
-            auto grandgrandparent = grandparent->parent;
-
-            if (parent->get_left() == get_ptr() && grandparent->get_left() == parent) {
-                parent->rotate_right();
-                rotate_right();
-            }
-            else if (parent->get_right() == get_ptr() && grandparent->get_right() == parent) {
-                parent->rotate_left();
-                rotate_left();
-            }
-            else if (parent->get_right() == get_ptr() && grandparent->get_left() == parent) {
-                rotate_left();
-                rotate_right();
-            }
-            else if (parent->get_left() == get_ptr() && grandparent->get_right() == parent) {
-                rotate_right();
-                rotate_left();
-            }
-        }
-    }
-
-    void splay() {
-        while (parent != nullptr) {
-            local_splay();
-        }
-    }
-
-public:
-    explicit Node(V _value) : value(_value) {
-        right = nullptr;
-        left = nullptr;
-        parent = nullptr;
-    }
-
-    void set_left(node_ptr_t node) {
-        left = node;
-        if (node != nullptr) {
-            node->parent = get_ptr();
-        }
-    }
-
-    void set_right(node_ptr_t node) {
-        right = node;
-        if (node != nullptr) {
-            node->parent = get_ptr();
-        }
-    }
-
-    node_ptr_t get_left() {
-        return left;
-    }
-
-    node_ptr_t get_right() {
-        return right;
-    }
-
-    V &get_value() {
-        return value;
-    }
-
-    void print() {
-        std::cout << value 
-            << ": left: " << (left != nullptr ? left->get_value() : -1) 
-            << ", right: " << (right != nullptr ? right->get_value() : -1)
-            << ", parent: " << (parent != nullptr ? parent->get_value() : -1)
-            << std::endl;
-    }
-
-    void _print_all() {
-        print();
-        if (left != nullptr) {
-            left->_print_all();
-        }
-        if (right != nullptr) {
-            right->_print_all();
-        }
-    }
-
-    void print_all() {
-        _print_all();
-        std::cout << std::endl;
-    }
-
-    void set_value(V _value) {
-        value = _value;
-    }
-
-    node_ptr_t search(V v) {
-        if (v < value) {
-            if (left != nullptr) {
-                return left->search(v);
-            }
-            else {
-                splay();
-                return get_ptr();
-            }
-        }
-        else if (v > value) {
-            if (right != nullptr) {
-                return right->search(v);
-            }
-            else {
-                splay();
-                return get_ptr();
-            }
-        }
-        else {
-            splay();
-            return get_ptr();
-        }
-    }
-
-    node_ptr_t insert(V v) {
-        node_ptr_t node = nullptr;
-
-        if (v < value) {
-            if (left != nullptr) {
-                return left->insert(v);
-            }
-            else {
-                node = std::make_shared<Node<V>>(v);
-
-                set_left(node);
-                node->splay();
-
-                return node;
-            }
-        }
-        else if (v > value) {
-            if (right != nullptr) {
-                return right->insert(v);
-            }
-            else {
-                node = std::make_shared<Node<V>>(v);
-
-                set_right(node);
-                node->splay();
-
-                return node;
-            }
-        }
-        else {
-            splay();
-            return get_ptr();
-        }
-    }
-
-    node_ptr_t remove(V v) {
-        if (v < value) {
-            if (left != nullptr) {
-                return left->remove(v);
-            }
-            else {
-                splay();
-                return get_ptr();
-            }
-        }
-        else if (v > value) {
-            if (right != nullptr) {
-                return right->remove(v);
-            }
-            else {
-                splay();
-                return get_ptr();
-            }
-        }
-        else {
-            node_ptr_t new_root = parent;
-
-            if (left == nullptr && right == nullptr) {
-                if (parent != nullptr) {
-                    if (parent->left == get_ptr()) {
-                        parent->left = nullptr;
-                    }
-                    else {
-                        parent->right = nullptr;
-                    }
-                }
-            }
-            else if ((left != nullptr && right == nullptr) || (right != nullptr && left == nullptr)) {
-                node_ptr_t child = left == nullptr ? right : left;
-
-                if (parent == nullptr) {
-                    new_root = child;
-                }
-                else if (parent->left == get_ptr()) {
-                    parent->set_left(child);
-                }
-                else {
-                    parent->set_right(child);
-                }
-            }
-            else {
-                node_ptr_t node = left;
-                while (node->right != nullptr) {
-                    node = node->right;
-                }
-
-                set_value(node->get_value());
-                if (node == left) {
-                    set_left(node->left);
-                }
-                else {
-                    node->parent->set_right(node->left);
-                }
-            }
-
-            if (new_root != nullptr) {
-                new_root->splay();
-            }
-
-            return new_root;
-        }
-    }
-
-    void get_next(std::stack<node_ptr_t> &traversal) {
-        if (right != nullptr) {
-            auto node = right;
-            
-            while (node->left != nullptr) {
-                traversal.push(node);
-                node = node->left;
-            }
-            traversal.push(node);
-        }
-    }
-
-    void get_previous(std::stack<node_ptr_t> &traversal) {
-        if (left != nullptr) {
-            auto node = left;
-
-            while (node->right != nullptr) {
-                traversal.push(node);
-                node = node->right;
-            }
-            traversal.push(node);
-        }
-    }
-
-    node_ptr_t unpin_left_subtree() {
-        auto node = left;
-        if (node != nullptr) {
-            node->parent = nullptr;
-        }
-        left = nullptr;
-
-        return node;
-    }
-
-    node_ptr_t unpin_right_subtree() {
-        auto node = right;
-        if (node != nullptr) {
-            node->parent = nullptr;
-        }
-        right = nullptr;
-
-        return node;
-    }
-};
-
 template<typename V>
 class SplayTree {
-    using node_ptr_t = std::shared_ptr<Node<V>>;
+
+    class Node : public std::enable_shared_from_this<Node> {
+        using node_ptr_t = std::shared_ptr<Node>;
+        using node_weakptr_t = std::weak_ptr<Node>;
+
+        node_ptr_t right, left;
+        node_weakptr_t parent;
+        V value;
+
+        node_ptr_t get_ptr() {
+            return this->shared_from_this();
+        }
+
+        node_ptr_t get_parent() {
+            return parent.lock();
+        }
+
+        void rotate_right() {
+            assert(get_parent()->left == get_ptr());
+
+            auto grandparent = get_parent()->get_parent();
+            auto current_parent = get_parent();
+            auto this_ptr = get_ptr();
+
+            current_parent->set_left(right);
+            set_right(current_parent);
+
+            parent = grandparent;
+
+            if (grandparent != nullptr) {
+                if (grandparent->left == current_parent) {
+                    grandparent->left = get_ptr();
+                }
+                else {
+                    grandparent->right = get_ptr();
+                }
+            }
+        }
+
+        void rotate_left() {
+            assert(get_parent()->right == get_ptr());
+
+            auto grandparent = get_parent()->get_parent();
+            auto current_parent = get_parent();
+            auto this_ptr = get_ptr();
+
+            current_parent->set_right(left);
+            set_left(current_parent);
+
+            parent = grandparent;
+
+            if (grandparent != nullptr) {
+                if (grandparent->left == current_parent) {
+                    grandparent->left = get_ptr();
+                }
+                else {
+                    grandparent->right = get_ptr();
+                }
+            }
+        }
+
+        void local_splay() {
+            auto grandparent = get_parent()->get_parent();
+
+            if (grandparent == nullptr) {
+                assert(get_parent()->get_left() == get_ptr() || get_parent()->get_right() == get_ptr());
+
+                if (get_parent()->get_left() == get_ptr()) {
+                    rotate_right();
+                }
+                else {
+                    rotate_left();
+                }
+            }
+            else {
+                auto grandgrandparent = grandparent->get_parent();
+                auto _parent = get_parent();
+
+                if (get_parent()->get_left() == get_ptr() && grandparent->get_left() == get_parent()) {
+                    get_parent()->rotate_right();
+                    rotate_right();
+                }
+                else if (get_parent()->get_right() == get_ptr() && grandparent->get_right() == get_parent()) {
+                    get_parent()->rotate_left();
+                    rotate_left();
+                }
+                else if (get_parent()->get_right() == get_ptr() && grandparent->get_left() == get_parent()) {
+                    rotate_left();
+                    rotate_right();
+                }
+                else if (get_parent()->get_left() == get_ptr() && grandparent->get_right() == get_parent()) {
+                    rotate_right();
+                    rotate_left();
+                }
+            }
+        }
+
+        void splay() {
+            while (get_parent() != nullptr) {
+                local_splay();
+            }
+        }
+
+    public:
+        explicit Node(V _value) : value(_value) {
+            right = nullptr;
+            left = nullptr;
+            parent = node_weakptr_t();
+        }
+
+        void set_left(node_ptr_t node) {
+            left = node;
+            if (node != nullptr) {
+                node->parent = get_ptr();
+            }
+        }
+
+        void set_right(node_ptr_t node) {
+            right = node;
+            if (node != nullptr) {
+                node->parent = get_ptr();
+            }
+        }
+
+        node_ptr_t get_left() {
+            return left;
+        }
+
+        node_ptr_t get_right() {
+            return right;
+        }
+
+        V &get_value() {
+            return value;
+        }
+
+        void print() {
+            std::cout << value
+                      << ": left: " << (left != nullptr ? left->get_value() : -1)
+                      << ", right: " << (right != nullptr ? right->get_value() : -1)
+                      << ", parent: " << (get_parent() != nullptr ? get_parent()->get_value() : -1)
+                      << std::endl;
+        }
+
+        void _print_all() {
+            print();
+            if (left != nullptr) {
+                left->_print_all();
+            }
+            if (right != nullptr) {
+                right->_print_all();
+            }
+        }
+
+        void print_all() {
+            _print_all();
+            std::cout << std::endl;
+        }
+
+        void set_value(V _value) {
+            value = _value;
+        }
+
+        node_ptr_t search(V v, SplayTree<V> *splay_tree) {
+            if (v < value) {
+                if (left != nullptr) {
+                    return left->search(v, splay_tree);
+                }
+                else {
+                    splay();
+                    splay_tree->root = get_ptr();
+                    return get_ptr();
+                }
+            }
+            else if (v > value) {
+                if (right != nullptr) {
+                    return right->search(v, splay_tree);
+                }
+                else {
+                    splay();
+                    splay_tree->root = get_ptr();
+                    return get_ptr();
+                }
+            }
+            else {
+                splay();
+                splay_tree->root = get_ptr();
+                return get_ptr();
+            }
+        }
+
+        node_ptr_t insert(V v, SplayTree<V> *splay_tree) {
+            node_ptr_t node = nullptr;
+
+            if (v < value) {
+                if (left != nullptr) {
+                    return left->insert(v, splay_tree);
+                }
+                else {
+                    node = std::make_shared<Node>(v);
+
+                    set_left(node);
+                    node->splay();
+                    splay_tree->root = node;
+
+                    return node;
+                }
+            }
+            else if (v > value) {
+                if (right != nullptr) {
+                    return right->insert(v, splay_tree);
+                }
+                else {
+                    node = std::make_shared<Node>(v);
+
+                    set_right(node);
+                    node->splay();
+                    splay_tree->root = node;
+
+                    return node;
+                }
+            }
+            else {
+                splay();
+                splay_tree->root = get_ptr();
+                return get_ptr();
+            }
+        }
+
+        node_ptr_t remove(V v, SplayTree<V> *splay_tree) {
+            if (v < value) {
+                if (left != nullptr) {
+                    return left->remove(v, splay_tree);
+                }
+                else {
+                    splay();
+                    splay_tree->root = get_ptr();
+                    return get_ptr();
+                }
+            }
+            else if (v > value) {
+                if (right != nullptr) {
+                    return right->remove(v, splay_tree);
+                }
+                else {
+                    splay();
+                    splay_tree->root = get_ptr();
+                    return get_ptr();
+                }
+            }
+            else {
+                node_ptr_t new_root = get_parent();
+
+                if (left == nullptr && right == nullptr) {
+                    if (get_parent() != nullptr) {
+                        if (get_parent()->left == get_ptr()) {
+                            get_parent()->left = nullptr;
+                        }
+                        else {
+                            get_parent()->right = nullptr;
+                        }
+                    }
+                }
+                else if ((left != nullptr && right == nullptr) || (right != nullptr && left == nullptr)) {
+                    node_ptr_t child = left == nullptr ? right : left;
+
+                    if (get_parent() == nullptr) {
+                        new_root = child;
+                    }
+                    else if (get_parent()->left == get_ptr()) {
+                        get_parent()->set_left(child);
+                    }
+                    else {
+                        get_parent()->set_right(child);
+                    }
+                }
+                else {
+                    node_ptr_t node = left;
+                    while (node->right != nullptr) {
+                        node = node->right;
+                    }
+
+                    set_value(node->get_value());
+                    if (node == left) {
+                        set_left(node->left);
+                    }
+                    else {
+                        node->get_parent()->set_right(node->left);
+                    }
+                }
+
+                if (new_root != nullptr) {
+                    new_root->splay();
+                    splay_tree->root = new_root;
+                }
+
+                return new_root;
+            }
+        }
+
+        void get_next(std::stack<node_ptr_t> &traversal) {
+            if (right != nullptr) {
+                auto node = right;
+
+                while (node->left != nullptr) {
+                    traversal.push(node);
+                    node = node->left;
+                }
+                traversal.push(node);
+            }
+        }
+
+        void get_previous(std::stack<node_ptr_t> &traversal) {
+            if (left != nullptr) {
+                auto node = left;
+
+                while (node->right != nullptr) {
+                    traversal.push(node);
+                    node = node->right;
+                }
+                traversal.push(node);
+            }
+        }
+
+        node_ptr_t unpin_left_subtree() {
+            auto node = left;
+            if (node != nullptr) {
+                node->parent = node_weakptr_t();
+            }
+            left = nullptr;
+
+            return node;
+        }
+
+        node_ptr_t unpin_right_subtree() {
+            auto node = right;
+            if (node != nullptr) {
+                node->parent = node_weakptr_t();
+            }
+            right = nullptr;
+
+            return node;
+        }
+    };
+
+    using node_ptr_t = std::shared_ptr<Node>;
 
     node_ptr_t root;
 
@@ -443,10 +460,10 @@ public:
 
     void insert(V value) {
         if (root == nullptr) {
-            root = std::make_shared<Node<V>>(value);
+            root = std::make_shared<Node>(value);
         }
         else {
-            root = root->insert(value);
+            root->insert(value, this);
         }
     }
 
@@ -454,7 +471,7 @@ public:
         if (root == nullptr) {
             return false;
         }
-        root = root->search(value);
+        root->search(value, this);
         V found = root->get_value();
         return found == value;
     }
@@ -464,17 +481,17 @@ public:
             return;
         }
         else {
-            root = root->remove(value);
+            root->remove(value, this);
         }
     }
 
     SplayTree<V> remove_less(V value) {
-        root = root->search(value);
+        root->search(value, this);
         return SplayTree(root->unpin_left_subtree());
     }
 
     SplayTree<V> remove_greater(V value) {
-        root = root->search(value);
+        root->search(value, this);
         return SplayTree(root->unpin_right_subtree());
     }
 
