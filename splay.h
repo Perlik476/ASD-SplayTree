@@ -1,14 +1,21 @@
 #include <iostream>
 #include <cassert>
 #include <vector>
+#include <memory>
 
 template <typename V>
-class Node {
-    Node *right, *left, *parent;
+class Node : public std::enable_shared_from_this<Node<V>> {
+    using node_ptr_t = std::shared_ptr<Node<V>>;
+
+    node_ptr_t right, left, parent;
     V value;
 
+    node_ptr_t get_ptr() {
+        return this->shared_from_this();
+    }
+
     inline void rotate_right() {
-        assert(parent->left == this);
+        assert(parent->left == get_ptr());
 
         auto grandparent = parent->parent;
         auto current_parent = parent;
@@ -18,23 +25,23 @@ class Node {
         }
 
         current_parent->left = this->right;
-        current_parent->parent = this;
+        current_parent->parent = get_ptr();
 
         this->parent = grandparent;
         this->right = current_parent;
         
         if (grandparent != nullptr) {
             if (grandparent->left == current_parent) {
-                grandparent->left = this;
+                grandparent->left = get_ptr();
             }
             else {
-                grandparent->right = this;
+                grandparent->right = get_ptr();
             }
         }
     }
 
     inline void rotate_left() {
-        assert(parent->right == this);
+        assert(parent->right == get_ptr());
 
         auto grandparent = parent->parent;
         auto current_parent = parent;
@@ -44,17 +51,17 @@ class Node {
         }
 
         current_parent->right = this->left;
-        current_parent->parent = this;
+        current_parent->parent = get_ptr();
 
         this->parent = grandparent;     
         this->left = current_parent;
 
         if (grandparent != nullptr) {
             if (grandparent->left == current_parent) {
-                grandparent->left = this;
+                grandparent->left = get_ptr();
             }
             else {
-                grandparent->right = this;
+                grandparent->right = get_ptr();
             }
         }
     }
@@ -62,10 +69,10 @@ class Node {
     inline void local_splay() {
         auto grandparent = parent->parent;
 
-        if (grandparent == nullptr) { // node's parent is root
-            assert(parent->get_left() == this || parent->get_right() == this);
+        if (grandparent == nullptr) {
+            assert(parent->get_left() == get_ptr() || parent->get_right() == get_ptr());
 
-            if (parent->get_left() == this) {
+            if (parent->get_left() == get_ptr()) {
                 rotate_right();
             }
             else {
@@ -75,19 +82,19 @@ class Node {
         else {
             auto grandgrandparent = grandparent->parent;
 
-            if (parent->get_left() == this && grandparent->get_left() == parent) {
+            if (parent->get_left() == get_ptr() && grandparent->get_left() == parent) {
                 parent->rotate_right();
                 rotate_right();
             }
-            else if (parent->get_right() == this && grandparent->get_right() == parent) {
+            else if (parent->get_right() == get_ptr() && grandparent->get_right() == parent) {
                 parent->rotate_left();
                 rotate_left();
             }
-            else if (parent->get_right() == this && grandparent->get_left() == parent) {
+            else if (parent->get_right() == get_ptr() && grandparent->get_left() == parent) {
                 rotate_left();
                 rotate_right();
             }
-            else if (parent->get_left() == this && grandparent->get_right() == parent) {
+            else if (parent->get_left() == get_ptr() && grandparent->get_right() == parent) {
                 rotate_right();
                 rotate_left();
             }
@@ -107,21 +114,21 @@ public:
         parent = nullptr;
     }
 
-    inline void set_left(Node *node) {
+    inline void set_left(node_ptr_t node) {
         left = node;
-        node->parent = this;
+        node->parent = get_ptr();
     }
 
-    inline void set_right(Node *node) {
+    inline void set_right(node_ptr_t node) {
         right = node;
-        node->parent = this;
+        node->parent = get_ptr();
     }
 
-    inline Node *get_left() {
+    inline node_ptr_t get_left() {
         return left;
     }
 
-    inline Node *get_right() {
+    inline node_ptr_t get_right() {
         return right;
     }
 
@@ -156,7 +163,7 @@ public:
         value = _value;
     }
 
-    inline Node *search(V v) {
+    inline node_ptr_t search(V v) {
         if (v < this->value) {
             if (this->left != nullptr) {
                 return this->left->search(v);
@@ -177,21 +184,21 @@ public:
         }
         else {
             splay();
-            return this;
+            return get_ptr();
         }
     }
 
-    inline Node *insert(V v) {
-        Node *node = nullptr;
+    inline node_ptr_t insert(V v) {
+        node_ptr_t node = nullptr;
         if (v < this->value) {
             if (this->left != nullptr) {
                 return this->left->insert(v);
             }
             else {
-                node = new Node(v);
+                node = std::make_shared<Node<V>>(v);
 
                 this->left = node;
-                node->parent = this;
+                node->parent = get_ptr();
                 node->splay();
 
                 return node;
@@ -202,10 +209,10 @@ public:
                 return this->right->insert(v);
             }
             else {
-                node = new Node(v);
+                node = std::make_shared<Node<V>>(v);
 
                 this->right = node;
-                node->parent = this;
+                node->parent = get_ptr();
                 node->splay();
 
                 return node;
@@ -213,7 +220,12 @@ public:
         }
         else {
             splay();
-            return this;
+            return get_ptr();
         }
     }
+};
+
+template<typename V>
+class SplayTree {
+    std::shared_ptr<Node<V>> root;
 };
