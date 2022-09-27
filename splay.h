@@ -2,6 +2,7 @@
 #include <cassert>
 #include <vector>
 #include <memory>
+#include <stack>
 
 template <typename V>
 class Node : public std::enable_shared_from_this<Node<V>> {
@@ -225,7 +226,6 @@ public:
             }
             else {
                 splay();
-
                 return get_ptr();
             }
         }
@@ -235,7 +235,6 @@ public:
             }
             else {
                 splay();
-
                 return get_ptr();
             }
         }
@@ -288,18 +287,15 @@ public:
         }
     }
 
-    node_ptr_t get_next() {
+    void get_next(std::stack<node_ptr_t> &traversal) {
         if (right != nullptr) {
             auto node = right;
             
             while (node->left != nullptr) {
+                traversal.push(node);
                 node = node->left;
             }
-
-            return node;
-        }
-        else {
-            return parent->right == get_ptr() ? nullptr : parent;
+            traversal.push(node);
         }
     }
 };
@@ -310,38 +306,34 @@ class SplayTree {
 
     node_ptr_t root;
 
-    node_ptr_t get_min_node() {
-        node_ptr_t node = root;
-        while (node->get_left() != nullptr) {
-            node = node->get_left();
-        }
-        return node;
-    }
-
-    node_ptr_t get_max_node() {
-        node_ptr_t node = root;
-        while (node->get_right() != nullptr) {
-            node = node->get_right();
-        }
-        return node;
-    }
-
     class Iterator {
-        node_ptr_t node;
+        std::stack<node_ptr_t> traversal;
 
     public:
         using iterator_category = std::input_iterator_tag;
         using difference_tag = std::ptrdiff_t;
         using value_type = V;
         using pointer = V *;
-        using reference = const V &;        
+        using reference = const V &;
 
-        Iterator(node_ptr_t node) : node(node) {}
+        explicit Iterator(std::stack<node_ptr_t> traversal) : traversal(traversal) {}
 
-        Iterator(const Iterator &other) : node(other.node) {}
+        explicit Iterator(SplayTree *splay) {
+            auto node = splay->root;
+
+            while (node != nullptr) {
+                traversal.push(node);
+                node = node->get_left();
+            }
+        }
+
+        Iterator(const Iterator &other) : Iterator(other.traversal) {}
 
         bool operator==(const Iterator &other) const {
-            return (this->node == other.node);
+            if (this->traversal.empty() == other.traversal.empty()) {
+                return this->traversal.empty() == true || this->traversal.top() == other.traversal.top();
+            }
+            return false;
         }
 
         bool operator!=(const Iterator &other) const {
@@ -349,21 +341,27 @@ class SplayTree {
         }
 
         reference operator*() const {
-            return node->get_value();
+            return traversal.top()->get_value();
         }
 
         pointer operator->() {
-            return &(node->get_value());
+            return &(traversal.top()->get_value());
         }
 
         Iterator &operator++() {
-            node = node->get_next();
+            node_ptr_t node = traversal.top();
+            traversal.pop();
+            node->get_next(traversal);
             return *this;
         }
 
         Iterator operator++(int) {
             Iterator temp = *this;
-            node = node->get_next();
+
+            node_ptr_t node = traversal.top();
+            traversal.pop();
+            node->get_next(traversal);
+
             return temp;
         }
     };
@@ -407,10 +405,14 @@ public:
     }
 
     Iterator begin() {
-        return Iterator(get_min_node());
+        return Iterator(this);
     }
 
     Iterator end() {
-        return Iterator(nullptr);
+        return Iterator(std::stack<node_ptr_t>());
+    }
+
+    void print() {
+        root->print_all();
     }
 };
