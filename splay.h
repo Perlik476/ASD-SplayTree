@@ -15,7 +15,6 @@ class Node : public std::enable_shared_from_this<Node<V>> {
     }
 
     void rotate_right() {
-        std::cout << "right" << std::endl;
         assert(parent->left == get_ptr());
 
         auto grandparent = parent->parent;
@@ -25,8 +24,6 @@ class Node : public std::enable_shared_from_this<Node<V>> {
         set_right(current_parent);
 
         parent = grandparent;
-
-        std::cout << "right2" << std::endl;
         
         if (grandparent != nullptr) {
             if (grandparent->left == current_parent) {
@@ -36,12 +33,9 @@ class Node : public std::enable_shared_from_this<Node<V>> {
                 grandparent->right = get_ptr();
             }
         }
-
-        std::cout << "right3" << std::endl;
     }
 
     void rotate_left() {
-        std::cout << "left" << std::endl;
         assert(parent->right == get_ptr());
 
         auto grandparent = parent->parent;
@@ -63,11 +57,8 @@ class Node : public std::enable_shared_from_this<Node<V>> {
     }
 
     void local_splay() {
-        std::cout << "parent: " << parent->get_value() << std::endl;
         auto grandparent = parent->parent;
-        std::cout << "ok" << std::endl;
         auto ptr = get_ptr();
-        std::cout << "ok2" << std::endl;
 
         if (grandparent == nullptr) {
             assert(parent->get_left() == get_ptr() || parent->get_right() == get_ptr());
@@ -83,27 +74,19 @@ class Node : public std::enable_shared_from_this<Node<V>> {
             auto grandgrandparent = grandparent->parent;
 
             if (parent->get_left() == get_ptr() && grandparent->get_left() == parent) {
-                std::cout << "a1" << std::endl;
                 parent->rotate_right();
-                std::cout << "a2" << std::endl;
                 rotate_right();
             }
             else if (parent->get_right() == get_ptr() && grandparent->get_right() == parent) {
-                std::cout << "b1" << std::endl;
                 parent->rotate_left();
-                std::cout << "b2" << std::endl;
                 rotate_left();
             }
             else if (parent->get_right() == get_ptr() && grandparent->get_left() == parent) {
-                std::cout << "c1" << std::endl;
                 rotate_left();
-                std::cout << "c2" << std::endl;
                 rotate_right();
             }
             else if (parent->get_left() == get_ptr() && grandparent->get_right() == parent) {
-                std::cout << "d1" << std::endl;
                 rotate_right();
-                std::cout << "d2" << std::endl;
                 rotate_left();
             }
         }
@@ -176,14 +159,13 @@ public:
     }
 
     node_ptr_t search(V v) {
-        std::cout << "current: " << this->get_value() << std::endl;
         if (v < value) {
             if (left != nullptr) {
                 return left->search(v);
             }
             else {
                 splay();
-                return nullptr;
+                return get_ptr();
             }
         }
         else if (v > value) {
@@ -192,13 +174,11 @@ public:
             }
             else {
                 splay();
-                return nullptr;
+                return get_ptr();
             }
         }
         else {
-            std::cout << "splay!" << std::endl;
             splay();
-            std::cout << "splayed!" << std::endl;
             return get_ptr();
         }
     }
@@ -412,11 +392,8 @@ public:
         if (root == nullptr) {
             return false;
         }
-        std::cout << "ok?" << std::endl;
         root = root->search(value);
-        std::cout << "ok4" << std::endl;
         V found = root->get_value();
-        std::cout << "ok5" << std::endl;
         return found == value;
     }
 
