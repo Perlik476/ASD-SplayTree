@@ -2,9 +2,6 @@
 #include "splay.h"
 
 int main() {
-    // auto splay = SplayTree({2, 1, 3, 7});
-
-
     auto root = std::make_shared<Node<int>>(5);
     auto right = std::make_shared<Node<int>>(7);
     auto left = std::make_shared<Node<int>>(2);
@@ -29,14 +26,29 @@ int main() {
 
     result = result->search(5);
     result->print_all();
-//    std::cout << left.get_right()->get_value();
 
-    result = result->remove(1);
+    // result = result->remove(1);
     result->print_all();
 
-    result = result->remove(4);
+    // result = result->remove(4);
     result->print_all();
 
+    result = result->insert(6);
+    result = result->insert(21);
+    result = result->insert(37);
+    result = result->insert(-2);
+
+    result = result->search(5);
+    result->print_all();
+
+    result = result->search(21);
+    result->print_all();
+
+    result = result->search(22);
+    result->print_all();
+
+    result = result->search(-2);
+    result->print_all();
 
     return 0;
 }
