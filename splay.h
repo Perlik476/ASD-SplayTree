@@ -20,15 +20,10 @@ class Node : public std::enable_shared_from_this<Node<V>> {
         auto grandparent = parent->parent;
         auto current_parent = parent;
 
-        if (this->right != nullptr) {
-            this->right->parent = current_parent;
-        }
-
-        current_parent->left = this->right;
-        current_parent->parent = get_ptr();
+        current_parent->set_left(this->right);
+        this->set_right(current_parent);
 
         this->parent = grandparent;
-        this->right = current_parent;
         
         if (grandparent != nullptr) {
             if (grandparent->left == current_parent) {
@@ -46,15 +41,10 @@ class Node : public std::enable_shared_from_this<Node<V>> {
         auto grandparent = parent->parent;
         auto current_parent = parent;
 
-        if (this->left != nullptr) {
-            this->left->parent = current_parent;
-        }
-
-        current_parent->right = this->left;
-        current_parent->parent = get_ptr();
+        current_parent->set_right(this->left);
+        this->set_left(current_parent);
 
         this->parent = grandparent;     
-        this->left = current_parent;
 
         if (grandparent != nullptr) {
             if (grandparent->left == current_parent) {
@@ -116,12 +106,16 @@ public:
 
     inline void set_left(node_ptr_t node) {
         left = node;
-        node->parent = get_ptr();
+        if (node != nullptr) {
+            node->parent = get_ptr();
+        }
     }
 
     inline void set_right(node_ptr_t node) {
         right = node;
-        node->parent = get_ptr();
+        if (node != nullptr) {
+            node->parent = get_ptr();
+        }
     }
 
     inline node_ptr_t get_left() {
@@ -197,8 +191,8 @@ public:
             else {
                 node = std::make_shared<Node<V>>(v);
 
-                this->left = node;
-                node->parent = get_ptr();
+                this->set_left(node);
+
                 node->splay();
 
                 return node;
@@ -211,8 +205,8 @@ public:
             else {
                 node = std::make_shared<Node<V>>(v);
 
-                this->right = node;
-                node->parent = get_ptr();
+                this->set_right(node);
+                
                 node->splay();
 
                 return node;
