@@ -4,8 +4,9 @@
 int main() {
     auto splay = SplayTree<int>({2, 1, 3, 7, 10, 5});
     for (auto x : splay) {
-        std::cout << "for: " << x << "\n";
+        std::cout << x << " ";
     }
+    std::cout << "\n";
 
     std::cout << "1 ? " << splay.contains(1) << std::endl;
 
@@ -22,8 +23,23 @@ int main() {
     std::cout << "3 ? " << splay.contains(3) << std::endl;
 
     for (auto x : splay) {
-        std::cout << x << "\n";
+        std::cout << x << " ";
     }
+    std::cout << "\n";
+
+    auto less = splay.remove_less(8);
+
+    std::cout << "less than 8: ";
+    for (auto x : less) {
+        std::cout << x << " ";
+    }
+    std::cout << "\n";
+
+    std::cout << "at least 8: ";
+    for (auto x : splay) {
+        std::cout << x << " ";
+    }
+    std::cout << "\n";
 
     return 0;
 }

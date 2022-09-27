@@ -298,6 +298,26 @@ public:
             traversal.push(node);
         }
     }
+
+    node_ptr_t unpin_left_subtree() {
+        auto node = left;
+        if (node != nullptr) {
+            node->parent = nullptr;
+        }
+        left = nullptr;
+
+        return node;
+    }
+
+    node_ptr_t unpin_right_subtree() {
+        auto node = right;
+        if (node != nullptr) {
+            node->parent = nullptr;
+        }
+        right = nullptr;
+
+        return node;
+    }
 };
 
 template<typename V>
@@ -371,10 +391,20 @@ public:
         root = nullptr;
     }
 
-    SplayTree(std::initializer_list<V> list) {
+    explicit SplayTree(node_ptr_t root) : root(root) {}
+
+    explicit SplayTree(std::initializer_list<V> list) {
         for (V value : list) {
             insert(value);
         }
+    }
+
+    Iterator begin() {
+        return Iterator(this);
+    }
+
+    Iterator end() {
+        return Iterator(std::stack<node_ptr_t>());
     }
 
     void insert(V value) {
@@ -404,12 +434,14 @@ public:
         }
     }
 
-    Iterator begin() {
-        return Iterator(this);
+    SplayTree<V> remove_less(V value) {
+        root = root->search(value);
+        return SplayTree(root->unpin_left_subtree());
     }
 
-    Iterator end() {
-        return Iterator(std::stack<node_ptr_t>());
+    SplayTree<V> remove_greater(V value) {
+        root = root->search(value);
+        return SplayTree(root->unpin_right_subtree());
     }
 
     void print() {
