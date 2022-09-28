@@ -13,7 +13,7 @@ void print(const std::set<T> &set) {
 }
 
 template <typename T>
-void print(SplayTree<T> &splay) {
+void print(const SplayTree<T> &splay) {
     std::cout << "splay size = " << splay.size() << std::endl;
     for (auto x : splay) {
         std::cout << x << " ";
@@ -22,7 +22,7 @@ void print(SplayTree<T> &splay) {
 }
 
 template <typename T>
-bool equals(const std::set<T> &set, SplayTree<T> &splay) {
+bool equals(const std::set<T> &set, const SplayTree<T> &splay) {
     if (set.size() != splay.size()) {
         return false;
     }
@@ -70,7 +70,7 @@ void test_correctness() {
 
     values = {2, 1, 3, 7, 11, 12, 2, 2, 4};
     for (int x : values) {
-        splay.remove(x);
+        splay.erase(x);
         assert(set.contains(x) ? !equals(set, splay) : equals(set, splay));
 
         set.erase(x);

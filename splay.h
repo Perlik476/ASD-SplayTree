@@ -408,9 +408,9 @@ class SplayTree {
         using pointer = V *;
         using reference = const V &;
 
-        explicit Iterator(std::stack<node_ptr_t> traversal) : traversal(traversal) {}
+        explicit Iterator(std::stack<node_ptr_t> &traversal) : traversal(traversal) {}
 
-        explicit Iterator(SplayTree *splay) {
+        explicit Iterator(const SplayTree *splay) {
             auto node = splay->root;
 
             if (increasing_direction) {
@@ -467,25 +467,25 @@ public:
 
     explicit SplayTree(node_ptr_t root) : root(root) {}
 
-    explicit SplayTree(std::initializer_list<V> list) {
+    SplayTree(std::initializer_list<V> list) {
         for (V value : list) {
             insert(value);
         }
     }
 
-    Iterator<true> begin() {
+    Iterator<true> begin() const {
         return Iterator<true>(this);
     }
 
-    Iterator<true> end() {
+    Iterator<true> end() const {
         return Iterator<true>(std::stack<node_ptr_t>());
     }
 
-    Iterator<false> rbegin() {
+    Iterator<false> rbegin() const {
         return Iterator<false>(this);
     }
 
-    Iterator<false> rend() {
+    Iterator<false> rend() const {
         return Iterator<false>(std::stack<node_ptr_t>());
     }
 
@@ -507,11 +507,11 @@ public:
         return found == value;
     }
 
-    size_t size() {
+    size_t size() const {
         return Node::get_subtree_size(root);
     }
 
-    void remove(V value) {
+    void erase(V value) {
         if (root == nullptr) {
             return;
         }
@@ -520,14 +520,22 @@ public:
         }
     }
 
-    SplayTree<V> remove_less(V value) {
+    SplayTree<V> erase_less(V value) {
         root->search(value, this);
         return SplayTree(root->unpin_left_subtree());
     }
 
-    SplayTree<V> remove_greater(V value) {
+    SplayTree<V> erase_greater(V value) {
         root->search(value, this);
         return SplayTree(root->unpin_right_subtree());
+    }
+
+    void clear() {
+        root = nullptr;
+    }
+
+    bool empty() const {
+        return root == nullptr;
     }
 
     void print() {
