@@ -42,7 +42,7 @@ bool equals(const std::set<T> &set, const SplayTree<T> &splay) {
     return true;
 }
 
-void test_correctness() {
+void test_correctness_basic() {
     std::set<int> set;
     SplayTree<int> splay;
     assert(equals(set, splay));
@@ -78,8 +78,36 @@ void test_correctness() {
     }
 }
 
+void test_split_basic() {
+    std::vector<int> values = {2, 1, 3, 7, 4, 2, 0, 6, 9, 4, 7, 6};
+
+    SplayTree<int> splay;
+
+    for (auto x : values) {
+        splay.insert(x);
+    }
+
+    int value = 6;
+    std::set<int> set_less, set_rest;
+    for (auto x : values) {
+        if (x < value) {
+            set_less.insert(x);
+        }
+        else {
+            set_rest.insert(x);
+        }
+    }
+
+    auto splay_less = splay.erase_less(value);
+
+    assert(equals(set_less, splay_less));
+    assert(equals(set_rest, splay));
+}
+
+
 int main() {
-    test_correctness();
+    test_correctness_basic();
+    test_split_basic();
 
     return 0;
 }

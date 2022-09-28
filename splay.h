@@ -362,7 +362,7 @@ class SplayTree {
             if (node != nullptr) {
                 node->parent = node_weakptr_t();
             }
-            left = nullptr;
+            set_left(nullptr);
 
             return node;
         }
@@ -372,7 +372,7 @@ class SplayTree {
             if (node != nullptr) {
                 node->parent = node_weakptr_t();
             }
-            right = nullptr;
+            set_right(nullptr);
 
             return node;
         }
@@ -408,7 +408,7 @@ class SplayTree {
         using pointer = V *;
         using reference = const V &;
 
-        explicit Iterator(std::stack<node_ptr_t> &traversal) : traversal(traversal) {}
+        explicit Iterator(std::stack<node_ptr_t> traversal) : traversal(traversal) {}
 
         explicit Iterator(const SplayTree *splay) {
             auto node = splay->root;
@@ -498,7 +498,7 @@ public:
         }
     }
 
-    bool contains(V value) {
+    bool contains(V value) const {
         if (root == nullptr) {
             return false;
         }
