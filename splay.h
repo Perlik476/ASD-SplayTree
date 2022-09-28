@@ -14,6 +14,7 @@ class SplayTree {
         node_ptr_t right, left;
         node_weakptr_t parent;
         V value;
+        size_t subtree_size = 1;
 
         node_ptr_t get_ptr() {
             return this->shared_from_this();
@@ -21,6 +22,10 @@ class SplayTree {
 
         node_ptr_t get_parent() {
             return parent.lock();
+        }
+
+        void update_subtree_size() {
+            subtree_size = 1 + get_subtree_size(right) + get_subtree_size(left);
         }
 
         void rotate_right() {
@@ -42,6 +47,7 @@ class SplayTree {
                 else {
                     grandparent->right = get_ptr();
                 }
+                grandparent->update_subtree_size();
             }
         }
 
@@ -64,6 +70,7 @@ class SplayTree {
                 else {
                     grandparent->right = get_ptr();
                 }
+                grandparent->update_subtree_size();
             }
         }
 
@@ -122,6 +129,7 @@ class SplayTree {
             if (node != nullptr) {
                 node->parent = get_ptr();
             }
+            update_subtree_size();
         }
 
         void set_right(node_ptr_t node) {
@@ -129,6 +137,7 @@ class SplayTree {
             if (node != nullptr) {
                 node->parent = get_ptr();
             }
+            update_subtree_size();
         }
 
         node_ptr_t get_left() {
@@ -137,6 +146,14 @@ class SplayTree {
 
         node_ptr_t get_right() {
             return right;
+        }
+
+        static size_t get_subtree_size(node_ptr_t node) {
+            return node ? node->subtree_size : 0;
+        }
+
+        size_t get_subtree_size() {
+            return subtree_size;
         }
 
         V &get_value() {
@@ -202,14 +219,13 @@ class SplayTree {
 
         node_ptr_t insert(V v, SplayTree<V> *splay_tree) {
             auto this_ptr = get_ptr();
-            node_ptr_t node = nullptr;
 
             if (v < value) {
                 if (left != nullptr) {
                     return left->insert(v, splay_tree);
                 }
                 else {
-                    node = std::make_shared<Node>(v);
+                    auto node = std::make_shared<Node>(v);
 
                     set_left(node);
                     node->splay();
@@ -223,7 +239,7 @@ class SplayTree {
                     return right->insert(v, splay_tree);
                 }
                 else {
-                    node = std::make_shared<Node>(v);
+                    auto node = std::make_shared<Node>(v);
 
                     set_right(node);
                     node->splay();
@@ -268,10 +284,10 @@ class SplayTree {
                 if (left == nullptr && right == nullptr) {
                     if (get_parent() != nullptr) {
                         if (get_parent()->left == get_ptr()) {
-                            get_parent()->left = nullptr;
+                            get_parent()->set_left(nullptr);
                         }
                         else {
-                            get_parent()->right = nullptr;
+                            get_parent()->set_right(nullptr);
                         }
                     }
                 }
@@ -302,6 +318,7 @@ class SplayTree {
                         node->get_parent()->set_right(node->left);
                     }
                 }
+
 
                 if (new_root != nullptr) {
                     new_root->splay();
@@ -480,6 +497,10 @@ public:
         root->search(value, this);
         V found = root->get_value();
         return found == value;
+    }
+
+    size_t size() {
+        return Node::get_subtree_size(root);
     }
 
     void remove(V value) {
