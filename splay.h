@@ -68,6 +68,7 @@ class SplayTree {
         }
 
         void local_splay() {
+            auto this_ptr = get_ptr();
             auto grandparent = get_parent()->get_parent();
 
             if (grandparent == nullptr) {
@@ -170,6 +171,8 @@ class SplayTree {
         }
 
         node_ptr_t search(V v, SplayTree<V> *splay_tree) {
+            auto this_ptr = get_ptr();
+
             if (v < value) {
                 if (left != nullptr) {
                     return left->search(v, splay_tree);
@@ -198,6 +201,7 @@ class SplayTree {
         }
 
         node_ptr_t insert(V v, SplayTree<V> *splay_tree) {
+            auto this_ptr = get_ptr();
             node_ptr_t node = nullptr;
 
             if (v < value) {
@@ -236,6 +240,8 @@ class SplayTree {
         }
 
         node_ptr_t remove(V v, SplayTree<V> *splay_tree) {
+            auto this_ptr = get_ptr();
+
             if (v < value) {
                 if (left != nullptr) {
                     return left->remove(v, splay_tree);
