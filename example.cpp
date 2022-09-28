@@ -2,53 +2,51 @@
 #include "splay.h"
 
 int main() {
-    auto root = std::make_shared<Node<int>>(5);
-    auto right = std::make_shared<Node<int>>(7);
-    auto left = std::make_shared<Node<int>>(2);
-    root->set_right(right);
-    root->set_left(left);
-    auto left_left = std::make_shared<Node<int>>(1);
-    auto left_right = std::make_shared<Node<int>>(4);
-    left->set_left(left_left);
-    left->set_right(left_right);
-    auto left_left_left = std::make_shared<Node<int>>(0);
-    left_left->set_left(left_left_left);
-    root->print_all();
+    auto splay = SplayTree<int>({2, 1, 3, 7, 10, 5});
+    for (auto x : splay) {
+        std::cout << x << " ";
+    }
+    std::cout << std::endl;
 
-    auto result = root->search(0);
-    result->print_all();
+    std::cout << "1 ? " << splay.contains(1) << std::endl;
 
-    result = result->search(4);
-    result->print_all();
+    splay.remove(5);
+    splay.insert(11);
+    splay.insert(0);
+    splay.insert(6);
+    splay.insert(4);
+    splay.insert(8);
+    splay.insert(9);
+    splay.remove(3);
 
-    result = result->insert(3);
-    result->print_all();
+    std::cout << "7 ? " << splay.contains(7) << std::endl;
+    std::cout << "3 ? " << splay.contains(3) << std::endl;
 
-    result = result->search(5);
-    result->print_all();
+    for (auto x : splay) {
+        std::cout << x << " ";
+    }
+    std::cout << "\n";
 
-    // result = result->remove(1);
-    result->print_all();
+    auto less = splay.remove_less(8);
 
-    // result = result->remove(4);
-    result->print_all();
+    std::cout << "less than 8: ";
+    for (auto x : less) {
+        std::cout << x << " ";
+    }
+    std::cout << "\n";
 
-    result = result->insert(6);
-    result = result->insert(21);
-    result = result->insert(37);
-    result = result->insert(-2);
+    std::cout << "at least 8: ";
+    for (auto x : splay) {
+        std::cout << x << " ";
+    }
+    std::cout << "\n";
 
-    result = result->search(5);
-    result->print_all();
+    std::cout << "min: " << *splay.begin() << ", max: " << *splay.rbegin() << "\n";
 
-    result = result->search(21);
-    result->print_all();
-
-    result = result->search(22);
-    result->print_all();
-
-    result = result->search(-2);
-    result->print_all();
+    for (auto it = splay.rbegin(); it != splay.rend(); it++) {
+        std::cout << *it << " ";
+    }
+    std::cout << "\n";
 
     return 0;
 }
