@@ -69,12 +69,14 @@ void test_correctness() {
     }
 
     values = {2, 1, 3, 7, 11, 12, 2, 2, 4};
+    splay.print();
     for (int x : values) {
         std::cout << x << std::endl;
         splay.remove(x);
 
         print(set);
         print(splay);
+        splay.print();
 
         assert(set.contains(x) ? !equals(set, splay) : equals(set, splay));
 
@@ -82,6 +84,7 @@ void test_correctness() {
 
         print(set);
         print(splay);
+        splay.print();
 
         assert(equals(set, splay));
     }

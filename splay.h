@@ -165,6 +165,7 @@ class SplayTree {
                       << ": left: " << (left != nullptr ? left->get_value() : -1)
                       << ", right: " << (right != nullptr ? right->get_value() : -1)
                       << ", parent: " << (get_parent() != nullptr ? get_parent()->get_value() : -1)
+                      << ", size=" << get_subtree_size()
                       << std::endl;
         }
 
@@ -296,6 +297,7 @@ class SplayTree {
 
                     if (get_parent() == nullptr) {
                         new_root = child;
+                        child->remove_parent();
                     }
                     else if (get_parent()->left == get_ptr()) {
                         get_parent()->set_left(child);
@@ -317,6 +319,8 @@ class SplayTree {
                     else {
                         node->get_parent()->set_right(node->left);
                     }
+
+                    new_root = get_ptr();
                 }
 
 
@@ -371,6 +375,10 @@ class SplayTree {
             right = nullptr;
 
             return node;
+        }
+
+        void remove_parent() {
+            parent = node_weakptr_t();
         }
     };
 
