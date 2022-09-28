@@ -71,11 +71,9 @@ void test_correctness() {
     values = {2, 1, 3, 7, 11, 12, 2, 2, 4};
     for (int x : values) {
         splay.remove(x);
-
         assert(set.contains(x) ? !equals(set, splay) : equals(set, splay));
 
         set.erase(x);
-
         assert(equals(set, splay));
     }
 }
