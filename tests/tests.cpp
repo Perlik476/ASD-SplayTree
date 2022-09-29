@@ -47,7 +47,7 @@ bool equals(const std::set<T> &set, const SplayTree<T> &splay) {
 void test_correctness_basic() {
     std::set<int> set;
     SplayTree<int> splay;
-    assert(!equals(set, splay));
+    assert(equals(set, splay));
 
     set.insert(1);
     assert(!equals(set, splay));
