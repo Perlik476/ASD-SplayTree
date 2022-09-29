@@ -1,5 +1,4 @@
 #include <iostream>
-#include <cassert>
 #include <vector>
 #include <memory>
 #include <stack>
@@ -29,8 +28,6 @@ class SplayTree {
         }
 
         void rotate_right() {
-            assert(get_parent()->left == get_ptr());
-
             auto grandparent = get_parent()->get_parent();
             auto current_parent = get_parent();
             auto this_ptr = get_ptr();
@@ -52,8 +49,6 @@ class SplayTree {
         }
 
         void rotate_left() {
-            assert(get_parent()->right == get_ptr());
-
             auto grandparent = get_parent()->get_parent();
             auto current_parent = get_parent();
             auto this_ptr = get_ptr();
@@ -79,8 +74,6 @@ class SplayTree {
             auto grandparent = get_parent()->get_parent();
 
             if (grandparent == nullptr) {
-                assert(get_parent()->get_left() == get_ptr() || get_parent()->get_right() == get_ptr());
-
                 if (get_parent()->get_left() == get_ptr()) {
                     rotate_right();
                 }

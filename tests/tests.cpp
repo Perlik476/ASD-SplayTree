@@ -1,7 +1,9 @@
 #include <iostream>
 #include "../splay.h"
 #include <set>
-#include <assert.h>
+#include <utility>
+#include <functional>
+#include "assert.h"
 
 template <typename T>
 void print(const std::set<T> &set) {
@@ -45,7 +47,7 @@ bool equals(const std::set<T> &set, const SplayTree<T> &splay) {
 void test_correctness_basic() {
     std::set<int> set;
     SplayTree<int> splay;
-    assert(equals(set, splay));
+    assert(!equals(set, splay));
 
     set.insert(1);
     assert(!equals(set, splay));
@@ -104,10 +106,32 @@ void test_split_basic() {
     assert(equals(set_rest, splay));
 }
 
+class Test {
+    const std::function<void()> test;
+    std::string name;
+
+public:
+    Test(const std::function<void()> &test, std::string &&name) : test(test), name(std::move(name)) {}
+
+    void operator ()() {
+        std::cout << "'" << name << "' test running: ";
+        try {
+            test();
+            std::cout << "passed!" << std::endl;
+        } catch (const std::exception &e) {
+            std::cout << "FAILED: " << e.what() << std::endl;
+        } catch (...) {
+            std::cout << "FAILED" << std::endl;
+        }
+    }
+};
 
 int main() {
-    test_correctness_basic();
-    test_split_basic();
+    auto tests = { Test(test_correctness_basic, "correctness basic"),
+                   Test(test_split_basic, "split basic") };
+    for (auto test : tests) {
+        test();
+    }
 
     return 0;
 }
