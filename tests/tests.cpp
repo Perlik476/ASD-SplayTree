@@ -104,6 +104,37 @@ void test_split_basic() {
 
     assert(equals(set_less, splay_less));
     assert(equals(set_rest, splay));
+
+    value = 0;
+    std::set<int> set_greater;
+    set_rest.clear();
+    for (auto x : values) {
+        if (x > value) {
+            set_greater.insert(x);
+        }
+        else {
+            set_rest.insert(x);
+        }
+    }
+
+    splay.clear();
+    for (auto x : values) {
+        splay.insert(x);
+    }
+    auto splay_greater = splay.erase_greater(value);
+
+    assert(equals(set_rest, splay));
+    assert(equals(set_greater, splay_greater));
+
+    values = {2, 1, 3, 7};
+    splay.clear();
+    for (auto x : values) {
+        splay.insert(x);
+    }
+    splay_greater = splay.erase_greater(0);
+
+    assert(splay_greater.size() == 4);
+    assert(splay.empty());
 }
 
 class Test {

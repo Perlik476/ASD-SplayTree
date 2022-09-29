@@ -284,6 +284,9 @@ class SplayTree {
                             get_parent()->set_right(nullptr);
                         }
                     }
+                    else {
+                        new_root = nullptr;
+                    }
                 }
                 else if ((left != nullptr && right == nullptr) || (right != nullptr && left == nullptr)) {
                     node_ptr_t child = left == nullptr ? right : left;
@@ -319,8 +322,8 @@ class SplayTree {
 
                 if (new_root != nullptr) {
                     new_root->splay();
-                    splay_tree->root = new_root;
                 }
+                splay_tree->root = new_root;
 
                 return new_root;
             }
@@ -515,12 +518,28 @@ public:
 
     SplayTree<V> erase_less(V value) {
         root->search(value, this);
-        return SplayTree(root->unpin_left_subtree());
+        auto result = SplayTree(root->unpin_left_subtree());
+
+        auto v = root->get_value();
+        if (v < value) {
+            erase(v);
+            result.insert(v);
+        }
+
+        return result;
     }
 
     SplayTree<V> erase_greater(V value) {
         root->search(value, this);
-        return SplayTree(root->unpin_right_subtree());
+        auto result = SplayTree(root->unpin_right_subtree());
+
+        auto v = root->get_value();
+        if (v > value) {
+            erase(v);
+            result.insert(v);
+        }
+
+        return result;
     }
 
     void clear() {
