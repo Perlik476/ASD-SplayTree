@@ -520,6 +520,18 @@ class SplayTree {
         return InternalIterator<false>(std::stack<node_ptr_t>());
     }
 
+    node_ptr_t _search(V v) {
+        return root->search(v, *this);
+    }
+
+    node_ptr_t _insert(V v) {
+        return root->insert(v, *this);
+    }
+
+    node_ptr_t _remove(V v) {
+        return root->remove(v, *this);
+    }
+
 public:
     SplayTree() {
         root = nullptr;
@@ -562,7 +574,7 @@ public:
         if (root == nullptr) {
             return false;
         }
-        root->search(value, *this);
+        _search(value);
         V found = root->get_value();
         return found == value;
     }
@@ -576,12 +588,12 @@ public:
             return;
         }
         else {
-            root->remove(value, *this);
+            _remove(value);
         }
     }
 
     SplayTree<V> erase_less(V value) {
-        root->search(value, *this);
+        _search(value);
         auto result = SplayTree(root->unpin_left_subtree());
 
         auto v = root->get_value();
@@ -594,7 +606,7 @@ public:
     }
 
     SplayTree<V> erase_greater(V value) {
-        root->search(value, *this);
+        _search(value);
         auto result = SplayTree(root->unpin_right_subtree());
 
         auto v = root->get_value();
@@ -621,6 +633,21 @@ public:
                 other.erase(x);
             }
         }
+    }
+
+    Iterator<true> find(const V value) {
+        _search(value);
+        return root->get_value() == value ?
+            Iterator<true>(InternalIterator<true>(std::stack<node_ptr_t>({root}))) : end();
+    }
+
+    Iterator<true> find(const V value) const {
+        for (auto it = begin(); it != end(); it++) {
+            if (*it == value) {
+                return it;
+            }
+        }
+        return end();
     }
 
     void print() {

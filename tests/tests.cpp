@@ -147,6 +147,42 @@ void test_merge_basic() {
     assert(equals({2, 7}, splay2));
 }
 
+void test_find_basic() {
+    SplayTree<int> splay = {6, 9, 4, 2, 1};
+
+    auto it = splay.find(6);
+    assert(it != splay.end());
+    assert(*it == 6);
+
+    it = splay.find(3);
+    assert(it == splay.end());
+
+    it = splay.find(2);
+    assert(it != splay.end());
+    assert(*it == 2);
+
+    for (int i = 0; i < 4; i++) {
+        assert(it != splay.end());
+        it++;
+    }
+    assert(it == splay.end());
+
+    it = splay.find(2);
+
+    auto const_it2= std::as_const(splay).find(10);
+    assert(const_it2 == splay.end());
+
+    auto const_it = std::as_const(splay).find(9);
+    assert(const_it != splay.end());
+    assert(*const_it == 9);
+
+    for (int i = 0; i < 4; i++) {
+        assert(it != splay.end());
+        it++;
+    }
+    assert(it == splay.end());
+}
+
 class Test {
     const std::function<void()> test;
     std::string name;
@@ -171,7 +207,8 @@ int main() {
     auto tests = {
             Test(test_correctness_basic, "correctness basic"),
             Test(test_split_basic, "split basic"),
-            Test(test_merge_basic, "merge basic")
+            Test(test_merge_basic, "merge basic"),
+            Test(test_find_basic, "find basic")
     };
 
     for (auto test : tests) {
