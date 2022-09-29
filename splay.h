@@ -185,7 +185,7 @@ class SplayTree {
             value = _value;
         }
 
-        node_ptr_t search(V v, SplayTree<V> *splay_tree) {
+        node_ptr_t search(V v, SplayTree<V> &splay_tree) {
             auto this_ptr = get_ptr();
 
             if (v < value) {
@@ -194,7 +194,7 @@ class SplayTree {
                 }
                 else {
                     splay();
-                    splay_tree->root = get_ptr();
+                    splay_tree.root = get_ptr();
                     return get_ptr();
                 }
             }
@@ -204,18 +204,18 @@ class SplayTree {
                 }
                 else {
                     splay();
-                    splay_tree->root = get_ptr();
+                    splay_tree.root = get_ptr();
                     return get_ptr();
                 }
             }
             else {
                 splay();
-                splay_tree->root = get_ptr();
+                splay_tree.root = get_ptr();
                 return get_ptr();
             }
         }
 
-        node_ptr_t insert(node_ptr_t node, SplayTree<V> *splay_tree) {
+        node_ptr_t insert(node_ptr_t node, SplayTree<V> &splay_tree) {
             auto this_ptr = get_ptr();
             V v = node->get_value();
 
@@ -226,7 +226,7 @@ class SplayTree {
                 else {
                     set_left(node);
                     node->splay();
-                    splay_tree->root = node;
+                    splay_tree.root = node;
 
                     return node;
                 }
@@ -238,23 +238,23 @@ class SplayTree {
                 else {
                     set_right(node);
                     node->splay();
-                    splay_tree->root = node;
+                    splay_tree.root = node;
 
                     return node;
                 }
             }
             else {
                 splay();
-                splay_tree->root = get_ptr();
+                splay_tree.root = get_ptr();
                 return get_ptr();
             }
         }
 
-        node_ptr_t insert(V v, SplayTree<V> *splay_tree) {
+        node_ptr_t insert(V v, SplayTree<V> &splay_tree) {
             return insert(std::make_shared<Node>(v), splay_tree);
         }
 
-        node_ptr_t remove(V v, SplayTree<V> *splay_tree) {
+        node_ptr_t remove(V v, SplayTree<V> &splay_tree) {
             auto this_ptr = get_ptr();
 
             if (v < value) {
@@ -263,7 +263,7 @@ class SplayTree {
                 }
                 else {
                     splay();
-                    splay_tree->root = get_ptr();
+                    splay_tree.root = get_ptr();
                     return get_ptr();
                 }
             }
@@ -273,7 +273,7 @@ class SplayTree {
                 }
                 else {
                     splay();
-                    splay_tree->root = get_ptr();
+                    splay_tree.root = get_ptr();
                     return get_ptr();
                 }
             }
@@ -328,7 +328,7 @@ class SplayTree {
                 if (new_root != nullptr) {
                     new_root->splay();
                 }
-                splay_tree->root = new_root;
+                splay_tree.root = new_root;
 
                 return new_root;
             }
@@ -554,15 +554,15 @@ public:
             root = std::make_shared<Node>(value);
         }
         else {
-            root->insert(value, this);
+            root->insert(value, *this);
         }
     }
 
-    bool contains(V value) const {
+    bool contains(V value) {
         if (root == nullptr) {
             return false;
         }
-        root->search(value, this);
+        root->search(value, *this);
         V found = root->get_value();
         return found == value;
     }
@@ -576,12 +576,12 @@ public:
             return;
         }
         else {
-            root->remove(value, this);
+            root->remove(value, *this);
         }
     }
 
     SplayTree<V> erase_less(V value) {
-        root->search(value, this);
+        root->search(value, *this);
         auto result = SplayTree(root->unpin_left_subtree());
 
         auto v = root->get_value();
@@ -594,7 +594,7 @@ public:
     }
 
     SplayTree<V> erase_greater(V value) {
-        root->search(value, this);
+        root->search(value, *this);
         auto result = SplayTree(root->unpin_right_subtree());
 
         auto v = root->get_value();
@@ -615,11 +615,10 @@ public:
     }
 
     void merge(SplayTree &other) {
-        for (auto it = internal_begin(); it != internal_end(); it++) {
-            auto node = *it;
-            if (!contains(node->get_value())) {
-                other.erase(node->get_value());
-                insert(node);
+        for (auto x : other) {
+            if (!contains(x)) {
+                insert(x);
+                other.erase(x);
             }
         }
     }
