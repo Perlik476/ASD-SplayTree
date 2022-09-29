@@ -183,6 +183,16 @@ void test_find_basic() {
     assert(it == splay.end());
 }
 
+void test_swap_basic() {
+    SplayTree<int> splay1 = {2, 1, 3, 7};
+    SplayTree<int> splay2 = {4, 7, 6};
+
+    splay1.swap(splay2);
+
+    assert(equals({4, 7, 6}, splay1));
+    assert(equals({2, 1, 3, 7}, splay2));
+}
+
 class Test {
     const std::function<void()> test;
     std::string name;
@@ -208,7 +218,8 @@ int main() {
             Test(test_correctness_basic, "correctness basic"),
             Test(test_split_basic, "split basic"),
             Test(test_merge_basic, "merge basic"),
-            Test(test_find_basic, "find basic")
+            Test(test_find_basic, "find basic"),
+            Test(test_swap_basic, "swap basic")
     };
 
     for (auto test : tests) {

@@ -650,6 +650,10 @@ public:
         return end();
     }
 
+    void swap(SplayTree<V> &other) {
+        std::swap(root, other.root);
+    }
+
     void print() {
         root->print_all();
     }
