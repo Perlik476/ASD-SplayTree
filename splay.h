@@ -149,6 +149,10 @@ class SplayTree {
             return subtree_size;
         }
 
+        const V &get_value() const {
+            return value;
+        }
+
         V &get_value() {
             return value;
         }
@@ -211,16 +215,15 @@ class SplayTree {
             }
         }
 
-        node_ptr_t insert(V v, SplayTree<V> *splay_tree) {
+        node_ptr_t insert(node_ptr_t node, SplayTree<V> *splay_tree) {
             auto this_ptr = get_ptr();
+            V v = node->get_value();
 
             if (v < value) {
                 if (left != nullptr) {
                     return left->insert(v, splay_tree);
                 }
                 else {
-                    auto node = std::make_shared<Node>(v);
-
                     set_left(node);
                     node->splay();
                     splay_tree->root = node;
@@ -233,8 +236,6 @@ class SplayTree {
                     return right->insert(v, splay_tree);
                 }
                 else {
-                    auto node = std::make_shared<Node>(v);
-
                     set_right(node);
                     node->splay();
                     splay_tree->root = node;
@@ -247,6 +248,10 @@ class SplayTree {
                 splay_tree->root = get_ptr();
                 return get_ptr();
             }
+        }
+
+        node_ptr_t insert(V v, SplayTree<V> *splay_tree) {
+            return insert(std::make_shared<Node>(v), splay_tree);
         }
 
         node_ptr_t remove(V v, SplayTree<V> *splay_tree) {
@@ -383,7 +388,7 @@ class SplayTree {
     node_ptr_t root;
 
     template<bool increasing_direction>
-    class Iterator {
+    class InternalIterator {
         std::stack<node_ptr_t> traversal;
 
         void next() {
@@ -400,13 +405,13 @@ class SplayTree {
     public:
         using iterator_category = std::input_iterator_tag;
         using difference_tag = std::ptrdiff_t;
-        using value_type = V;
-        using pointer = V *;
-        using reference = const V &;
+        using value_type = Node;
+        using pointer = node_ptr_t;
+        using reference = const Node &;
 
-        explicit Iterator(std::stack<node_ptr_t> traversal) : traversal(traversal) {}
+        explicit InternalIterator(std::stack<node_ptr_t> traversal) : traversal(traversal) {}
 
-        explicit Iterator(const SplayTree *splay) {
+        explicit InternalIterator(const SplayTree *splay) {
             auto node = splay->root;
 
             if (increasing_direction) {
@@ -423,13 +428,56 @@ class SplayTree {
             }
         }
 
-        Iterator(const Iterator &other) : Iterator(other.traversal) {}
+        InternalIterator(const InternalIterator &other) : InternalIterator(other.traversal) {}
 
-        bool operator==(const Iterator &other) const {
+        bool operator==(const InternalIterator &other) const {
             if (this->traversal.empty() == other.traversal.empty()) {
                 return this->traversal.empty() == true || this->traversal.top() == other.traversal.top();
             }
             return false;
+        }
+
+        bool operator!=(const InternalIterator &other) const {
+            return !(*this == other);
+        }
+
+        reference operator*() const {
+            return *traversal.top();
+        }
+
+        pointer operator->() {
+            return traversal.top();
+        }
+
+        InternalIterator &operator++() {
+            next();
+            return *this;
+        }
+
+        InternalIterator operator++(int) {
+            InternalIterator temp = *this;
+            next();
+            return temp;
+        }
+    };
+
+    template<bool increasing_direction>
+    class Iterator {
+        InternalIterator<increasing_direction> iterator;
+
+    public:
+        using iterator_category = std::input_iterator_tag;
+        using difference_tag = std::ptrdiff_t;
+        using value_type = V;
+        using pointer = V *;
+        using reference = const V &;
+
+        Iterator(InternalIterator<increasing_direction> iterator) : iterator(iterator) {}
+
+        Iterator(const Iterator &other) : Iterator(other.iterator) {}
+
+        bool operator==(const Iterator &other) const {
+            return iterator == other.iterator;
         }
 
         bool operator!=(const Iterator &other) const {
@@ -437,24 +485,40 @@ class SplayTree {
         }
 
         reference operator*() const {
-            return traversal.top()->get_value();
+            return (*iterator).get_value();
         }
 
         pointer operator->() {
-            return &(traversal.top()->get_value());
+            return &(iterator->get_value());
         }
 
         Iterator &operator++() {
-            next();
+            iterator++;
             return *this;
         }
 
         Iterator operator++(int) {
             Iterator temp = *this;
-            next();
+            iterator++;
             return temp;
         }
     };
+
+    InternalIterator<true> internal_begin() const {
+        return InternalIterator<true>(this);
+    }
+
+    InternalIterator<true> internal_end() const {
+        return InternalIterator<true>(std::stack<node_ptr_t>());
+    }
+
+    InternalIterator<false> internal_rbegin() const {
+        return InternalIterator<false>(this);
+    }
+
+    InternalIterator<false> internal_rend() const {
+        return InternalIterator<false>(std::stack<node_ptr_t>());
+    }
 
 public:
     SplayTree() {
@@ -470,19 +534,19 @@ public:
     }
 
     Iterator<true> begin() const {
-        return Iterator<true>(this);
+        return Iterator<true>(internal_begin());
     }
 
     Iterator<true> end() const {
-        return Iterator<true>(std::stack<node_ptr_t>());
+        return Iterator<true>(internal_end());
     }
 
     Iterator<false> rbegin() const {
-        return Iterator<false>(this);
+        return Iterator<false>(internal_rbegin());
     }
 
     Iterator<false> rend() const {
-        return Iterator<false>(std::stack<node_ptr_t>());
+        return Iterator<false>(internal_rend());
     }
 
     void insert(V value) {
@@ -546,8 +610,18 @@ public:
         root = nullptr;
     }
 
-    bool empty() const {
+    [[nodiscard]] bool empty() const {
         return root == nullptr;
+    }
+
+    void merge(SplayTree &other) {
+        for (auto it = internal_begin(); it != internal_end(); it++) {
+            auto node = *it;
+            if (!contains(node->get_value())) {
+                other.erase(node->get_value());
+                insert(node);
+            }
+        }
     }
 
     void print() {
