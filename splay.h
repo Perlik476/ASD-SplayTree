@@ -683,6 +683,50 @@ public:
         return find(value) != end();
     }
 
+    Iterator<true> lower_bound(const V value) {
+        _search(value);
+        if (root->get_value() >= value) {
+            return Iterator<true>(InternalIterator<true>(std::stack<node_ptr_t>({root})));
+        }
+        else {
+            if (root->get_right() == nullptr) {
+                return end();
+            }
+
+            node_ptr_t node = root->get_right();
+            std::stack<node_ptr_t> traversal({ root, root->get_right() });
+
+            while (node->get_left() != nullptr) {
+                node = node->get_left();
+                traversal.push(node);
+            }
+
+            return Iterator<true>(InternalIterator<true>(traversal));
+        }
+    }
+
+    Iterator<true> upper_bound(const V value) {
+        _search(value);
+        if (root->get_value() > value) {
+            return Iterator<true>(InternalIterator<true>(std::stack<node_ptr_t>({root})));
+        }
+        else {
+            if (root->get_right() == nullptr) {
+                return end();
+            }
+
+            node_ptr_t node = root->get_right();
+            std::stack<node_ptr_t> traversal({ root, root->get_right() });
+
+            while (node->get_left() != nullptr) {
+                node = node->get_left();
+                traversal.push(node);
+            }
+
+            return Iterator<true>(InternalIterator<true>(traversal));
+        }
+    }
+
     void print() {
         root->print_all();
     }

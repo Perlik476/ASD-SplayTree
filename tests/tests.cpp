@@ -196,7 +196,6 @@ void test_swap_basic() {
 void test_contains_basic() {
     SplayTree<int> splay = {1, 4, 9, 12, 5, 17};
 
-
     assert(splay.contains(1));
     assert(splay.contains(9));
     assert(!splay.contains(6));
@@ -206,6 +205,46 @@ void test_contains_basic() {
     assert(splay2.contains(1));
     assert(splay2.contains(9));
     assert(!splay2.contains(6));
+}
+
+void test_lower_upper_bound_basic() {
+    SplayTree<int> splay = {2, 1, 3, 7, 4, 6, 9};
+
+    auto it = splay.lower_bound(4);
+    assert(*it == 4);
+
+    it = splay.upper_bound(4);
+    assert(*it == 6);
+
+    it = splay.lower_bound(8);
+    assert(*it == 9);
+
+    it = splay.upper_bound(8);
+    assert(*it == 9);
+
+    it = splay.lower_bound(2);
+    assert(*it == 2);
+
+    it = splay.upper_bound(2);
+    assert(*it == 3);
+
+    it = splay.lower_bound(12);
+    assert(it == splay.end());
+
+    it = splay.upper_bound(12);
+    assert(it == splay.end());
+
+    it = splay.lower_bound(9);
+    assert(*it == 9);
+
+    it = splay.upper_bound(9);
+    assert(it == splay.end());
+
+    it = splay.lower_bound(0);
+    assert(*it == 1);
+
+    it = splay.upper_bound(0);
+    assert(*it == 1);
 }
 
 class Test {
@@ -235,7 +274,8 @@ int main() {
             Test(test_merge_basic, "merge basic"),
             Test(test_find_basic, "find basic"),
             Test(test_swap_basic, "swap basic"),
-            Test(test_contains_basic, "contains basic")
+            Test(test_contains_basic, "contains basic"),
+            Test(test_lower_upper_bound_basic, "lower/upper bound basic")
     };
 
     for (auto test : tests) {
