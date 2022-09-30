@@ -8,7 +8,7 @@
 #include <variant>
 #include <optional>
 
-template<class V, class... FunctionTypes>
+template<class V, class Compare = std::less<V>, class... FunctionTypes>
 class SplayTree {
 public:
     template <class T>
@@ -256,7 +256,7 @@ private:
         std::shared_ptr<const Node> search_no_splay(V v, const SplayTree &splay_tree) const {
             auto this_ptr = get_ptr();
 
-            if (v < value) {
+            if (Compare{}(v, value)) {
                 if (left != nullptr) {
                     return left->search_no_splay(v, splay_tree);
                 }
@@ -264,7 +264,7 @@ private:
                     return get_ptr();
                 }
             }
-            else if (v > value) {
+            else if (Compare{}(value, v)) {
                 if (right != nullptr) {
                     return right->search_no_splay(v, splay_tree);
                 }
@@ -291,7 +291,7 @@ private:
             auto this_ptr = get_ptr();
             V v = node->get_value();
 
-            if (v < value) {
+            if (Compare{}(v, value)) {
                 if (left != nullptr) {
                     return left->insert(v, splay_tree);
                 }
@@ -303,7 +303,7 @@ private:
                     return node;
                 }
             }
-            else if (v > value) {
+            else if (Compare{}(value, v)) {
                 if (right != nullptr) {
                     return right->insert(v, splay_tree);
                 }
@@ -329,7 +329,7 @@ private:
         node_ptr_t remove(V v, SplayTree &splay_tree) {
             auto this_ptr = get_ptr();
 
-            if (v < value) {
+            if (Compare{}(v, value)) {
                 if (left != nullptr) {
                     return left->remove(v, splay_tree);
                 }
@@ -339,7 +339,7 @@ private:
                     return get_ptr();
                 }
             }
-            else if (v > value) {
+            else if (Compare{}(value, v)) {
                 if (right != nullptr) {
                     return right->remove(v, splay_tree);
                 }
@@ -679,7 +679,7 @@ public:
         }
         _search(value);
         V found = root->get_value();
-        return found == value;
+        return !Compare{}(found, value) && !Compare{}(value, found);
     }
 
     bool contains(V value) const {
@@ -688,7 +688,7 @@ public:
         }
         auto node = _search_no_splay(value);
         V found = node->get_value();
-        return found == value;
+        return !Compare{}(found, value) && !Compare{}(value, found);
     }
 
     size_t size() const {
@@ -709,7 +709,7 @@ public:
         auto result = SplayTree(root->unpin_left_subtree(*this));
 
         auto v = root->get_value();
-        if (v < value) {
+        if (Compare{}(v, value)) {
             erase(v);
             result.insert(v);
         }
@@ -722,7 +722,7 @@ public:
         auto result = SplayTree(root->unpin_right_subtree(*this));
 
         auto v = root->get_value();
-        if (v > value) {
+        if (Compare{}(value, v)) {
             erase(v);
             result.insert(v);
         }
@@ -749,7 +749,7 @@ public:
 
     Iterator<true> find(const V value) {
         _search(value);
-        return root->get_value() == value ?
+        return !Compare{}(root->get_value(), value) && !Compare{}(value, root->get_value()) ?
             Iterator<true>(InternalIterator<true>(std::stack<node_ptr_t>({root}))) : end();
     }
 
@@ -776,7 +776,7 @@ public:
 
     Iterator<true> lower_bound(const V value) {
         _search(value);
-        if (root->get_value() >= value) {
+        if (!Compare{}(root->get_value(), value)) {
             return Iterator<true>(InternalIterator<true>(std::stack<node_ptr_t>({root})));
         }
         else {
@@ -798,7 +798,7 @@ public:
 
     Iterator<true> upper_bound(const V value) {
         _search(value);
-        if (root->get_value() > value) {
+        if (Compare{}(value, root->get_value())) {
             return Iterator<true>(InternalIterator<true>(std::stack<node_ptr_t>({root})));
         }
         else {

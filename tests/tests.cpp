@@ -250,7 +250,7 @@ void test_lower_upper_bound_basic() {
 }
 
 void test_function_basic() {
-    using splay_t = SplayTree<int, std::pair<int, int>>;
+    using splay_t = SplayTree<int, std::less<int>, std::pair<int, int>>;
 
     splay_t::Function<int> even_counter = { "even",
                                     [](int v, int left, int right) { return (v % 2 == 0) + left + right; }, 1, 0 };
@@ -268,6 +268,25 @@ void test_function_basic() {
 
     assert(splay.get_value<int>("even") == 3);
     assert(splay.get_value<int>("max") == 9);
+}
+
+void test_comparer_basic() {
+    SplayTree<int, std::greater<>> splay({2, 1, 3, 7});
+    auto it = splay.begin();
+    assert(*it++ == 7);
+    assert(*it++ == 3);
+    assert(*it++ == 2);
+    assert(*it++ == 1);
+    assert(it == splay.end());
+
+    it = splay.find(4);
+    assert(it == splay.end());
+
+    it = splay.upper_bound(3);
+    assert(*it == 2);
+
+    it = splay.lower_bound(3);
+    assert(*it == 3);
 }
 
 class Test {
@@ -299,7 +318,8 @@ int main() {
             Test(test_swap_basic, "swap basic"),
             Test(test_contains_basic, "contains basic"),
             Test(test_lower_upper_bound_basic, "lower/upper bound basic"),
-            Test(test_function_basic, "function basic")
+            Test(test_function_basic, "function basic"),
+            Test(test_comparer_basic, "comparer basic")
     };
 
     for (auto test : tests) {
