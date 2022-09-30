@@ -85,22 +85,13 @@ private:
             return parent.lock();
         }
 
-//        template <class T>
-//        static const T evaluate_function(const Function<T> &function, const T &v, const T &lv, const T &rv) {
-//            auto func = function.get_function();
-//            auto result = func(v, lv, rv);
-//            return result;
-//        }
-
         void update(const SplayTree &splay) {
             subtree_size = 1 + get_subtree_size(right) + get_subtree_size(left);
 
             for (auto &[name, function] : splay.functions) {
-                auto left_value = std::visit([&](auto &&func) { return get_function_value(left, func); }, function);
-                auto right_value = std::visit([&](auto &&func) { return get_function_value(right, func); }, function);
-                auto new_value = std::visit(
-                        [&](auto &&func) { return func(value, left_value, right_value); }, function);
-                function_values[name] = new_value;
+                std::visit([&](auto &&func) {
+                    function_values[name] = func(value, get_function_value(left, func), get_function_value(right, func));
+                }, function);
             }
         }
 
@@ -471,7 +462,7 @@ private:
             else if (!node->function_values.contains(function.get_name())) {
                 node->function_values[function.get_name()] = function.get_default();
             }
-            return std::visit([&](auto &&x) { return x; }, node->function_values[function.get_name()]);
+            return std::get<T>(node->function_values[function.get_name()]);
         }
     };
 
@@ -631,21 +622,6 @@ private:
     explicit SplayTree(node_ptr_t root) : root(root) {}
 
     std::map<std::string, polymorphic_function_t> functions;
-
-//    template <std::size_t I = 0>
-//    polymorphic_function_t get_function(const polymorphic_function_t &function)
-//    {
-//        if constexpr (I < std::variant_size_v<polymorphic_function_t>)
-//        {
-//            auto result = function.get<std::optional<std::variant_alternative_t<I, polymorphic_function_t>>>();
-//
-//            return result ? std::move(*result) : parse<I + 1>(function);
-//        }
-//    }
-
-    std::type_info const get_function_type(const polymorphic_function_t &function){
-        return std::visit([](auto &&x) -> decltype(auto) { return typeid(x); }, function);
-    }
 
 public:
 
@@ -850,8 +826,8 @@ public:
         }
 
         auto &polymorphic_func = function_it->second;
-
-        return std::visit([&](auto &&func) { return Node::get_function_value(root, func); }, polymorphic_func);
+        auto &func = std::get<Function<T>>(polymorphic_func);
+        return Node::template get_function_value<T>(root, func);
     }
 
     void print() {

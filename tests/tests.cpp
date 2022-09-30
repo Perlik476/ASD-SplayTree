@@ -250,14 +250,16 @@ void test_lower_upper_bound_basic() {
 }
 
 void test_function_basic() {
-    SplayTree<int>::Function<int> even_counter = { "even",
+    using splay_t = SplayTree<int, std::pair<int, int>>;
+
+    splay_t::Function<int> even_counter = { "even",
                                     [](int v, int left, int right) { return (v % 2 == 0) + left + right; }, 1, 0 };
 
-    SplayTree<int>::Function<int> max = { "max",
+    splay_t::Function<int> max = { "max",
                                      [](int v, int left, int right) { return std::max(v, std::max(left, right)); },
                                      std::numeric_limits<int>::min(), std::numeric_limits<int>::min() };
 
-    SplayTree<int> splay({ even_counter, max });
+    splay_t splay({ even_counter, max });
 
     auto set = std::set({2, 1, 3, 7, 6, 9, 4, 2});
     for (auto x : set) {
