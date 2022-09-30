@@ -4,6 +4,8 @@
 #include <utility>
 #include <functional>
 #include "assert.h"
+#include <any>
+#include <limits>
 
 template <typename T>
 void print(const std::set<T> &set) {
@@ -247,6 +249,20 @@ void test_lower_upper_bound_basic() {
     assert(*it == 1);
 }
 
+void test_function_basic() {
+    SplayTree<int>::Function even_counter = { "even",
+                                    [](int v, int left, int right) { return (v % 2 == 0) + left + right; }, 1, 0 };
+
+    SplayTree<int>::Function max = { "max",
+                                     [](int v, int left, int right) { return std::max(v, std::max(left, right)); },
+                                     std::numeric_limits<int>::min(), std::numeric_limits<int>::min() };
+
+    SplayTree<int> splay({2, 1, 3, 7, 6, 9, 4, 2}, { even_counter, max });
+
+    assert(splay.get_value("even") == 3);
+    assert(splay.get_value("max") == 9);
+}
+
 class Test {
     const std::function<void()> test;
     std::string name;
@@ -275,7 +291,8 @@ int main() {
             Test(test_find_basic, "find basic"),
             Test(test_swap_basic, "swap basic"),
             Test(test_contains_basic, "contains basic"),
-            Test(test_lower_upper_bound_basic, "lower/upper bound basic")
+            Test(test_lower_upper_bound_basic, "lower/upper bound basic"),
+            Test(test_function_basic, "function basic")
     };
 
     for (auto test : tests) {

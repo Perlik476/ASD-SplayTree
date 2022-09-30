@@ -1,11 +1,18 @@
 #include <iostream>
+#include <utility>
 #include <vector>
 #include <memory>
 #include <stack>
+#include <map>
+#include <functional>
+#include <variant>
 
-template<typename V>
+template<class V>
 class SplayTree {
+public:
+    class Function;
 
+private:
     class Node : public std::enable_shared_from_this<Node> {
         using node_ptr_t = std::shared_ptr<Node>;
         using node_weakptr_t = std::weak_ptr<Node>;
@@ -14,6 +21,8 @@ class SplayTree {
         node_weakptr_t parent;
         V value;
         size_t subtree_size = 1;
+
+        std::map<std::string, int> function_values;
 
         node_ptr_t get_ptr() {
             return this->shared_from_this();
@@ -27,17 +36,22 @@ class SplayTree {
             return parent.lock();
         }
 
-        void update_subtree_size() {
+        void update(const SplayTree &splay) {
             subtree_size = 1 + get_subtree_size(right) + get_subtree_size(left);
+
+            for (auto &[name, function] : splay.functions) {
+                function_values[name] = function(get_value(), get_function_value(left, function),
+                                                                get_function_value(right, function));
+            }
         }
 
-        void rotate_right() {
+        void rotate_right(const SplayTree &splay_tree) {
             auto grandparent = get_parent()->get_parent();
             auto current_parent = get_parent();
             auto this_ptr = get_ptr();
 
-            current_parent->set_left(right);
-            set_right(current_parent);
+            current_parent->set_left(right, splay_tree);
+            set_right(current_parent, splay_tree);
 
             parent = grandparent;
 
@@ -48,17 +62,17 @@ class SplayTree {
                 else {
                     grandparent->right = get_ptr();
                 }
-                grandparent->update_subtree_size();
+                grandparent->update(splay_tree);
             }
         }
 
-        void rotate_left() {
+        void rotate_left(const SplayTree &splay_tree) {
             auto grandparent = get_parent()->get_parent();
             auto current_parent = get_parent();
             auto this_ptr = get_ptr();
 
-            current_parent->set_right(left);
-            set_left(current_parent);
+            current_parent->set_right(left, splay_tree);
+            set_left(current_parent, splay_tree);
 
             parent = grandparent;
 
@@ -69,20 +83,20 @@ class SplayTree {
                 else {
                     grandparent->right = get_ptr();
                 }
-                grandparent->update_subtree_size();
+                grandparent->update(splay_tree);
             }
         }
 
-        void local_splay() {
+        void local_splay(const SplayTree &splay_tree) {
             auto this_ptr = get_ptr();
             auto grandparent = get_parent()->get_parent();
 
             if (grandparent == nullptr) {
                 if (get_parent()->get_left() == get_ptr()) {
-                    rotate_right();
+                    rotate_right(splay_tree);
                 }
                 else {
-                    rotate_left();
+                    rotate_left(splay_tree);
                 }
             }
             else {
@@ -90,27 +104,27 @@ class SplayTree {
                 auto _parent = get_parent();
 
                 if (get_parent()->get_left() == get_ptr() && grandparent->get_left() == get_parent()) {
-                    get_parent()->rotate_right();
-                    rotate_right();
+                    get_parent()->rotate_right(splay_tree);
+                    rotate_right(splay_tree);
                 }
                 else if (get_parent()->get_right() == get_ptr() && grandparent->get_right() == get_parent()) {
-                    get_parent()->rotate_left();
-                    rotate_left();
+                    get_parent()->rotate_left(splay_tree);
+                    rotate_left(splay_tree);
                 }
                 else if (get_parent()->get_right() == get_ptr() && grandparent->get_left() == get_parent()) {
-                    rotate_left();
-                    rotate_right();
+                    rotate_left(splay_tree);
+                    rotate_right(splay_tree);
                 }
                 else if (get_parent()->get_left() == get_ptr() && grandparent->get_right() == get_parent()) {
-                    rotate_right();
-                    rotate_left();
+                    rotate_right(splay_tree);
+                    rotate_left(splay_tree);
                 }
             }
         }
 
-        void splay() {
+        void splay(const SplayTree &splay_tree) {
             while (get_parent() != nullptr) {
-                local_splay();
+                local_splay(splay_tree);
             }
         }
 
@@ -121,20 +135,20 @@ class SplayTree {
             parent = node_weakptr_t();
         }
 
-        void set_left(node_ptr_t node) {
+        void set_left(node_ptr_t node, const SplayTree &splay_tree) {
             left = node;
             if (node != nullptr) {
                 node->parent = get_ptr();
             }
-            update_subtree_size();
+            update(splay_tree);
         }
 
-        void set_right(node_ptr_t node) {
+        void set_right(node_ptr_t node, const SplayTree &splay_tree) {
             right = node;
             if (node != nullptr) {
                 node->parent = get_ptr();
             }
-            update_subtree_size();
+            update(splay_tree);
         }
 
         node_ptr_t get_left() {
@@ -189,7 +203,7 @@ class SplayTree {
             value = _value;
         }
 
-        std::shared_ptr<const Node> search_no_splay(V v, const SplayTree<V> &splay_tree) const {
+        std::shared_ptr<const Node> search_no_splay(V v, const SplayTree &splay_tree) const {
             auto this_ptr = get_ptr();
 
             if (v < value) {
@@ -213,17 +227,17 @@ class SplayTree {
             }
         }
 
-        node_ptr_t search(V v, SplayTree<V> &splay_tree) {
+        node_ptr_t search(V v, SplayTree &splay_tree) {
             auto node_const = search_no_splay(v, splay_tree);
             node_ptr_t node = ((Node &)(*node_const)).get_ptr();
 
-            node->splay();
+            node->splay(splay_tree);
             splay_tree.root = node;
 
             return node;
         }
 
-        node_ptr_t insert(node_ptr_t node, SplayTree<V> &splay_tree) {
+        node_ptr_t insert(node_ptr_t node, SplayTree &splay_tree) {
             auto this_ptr = get_ptr();
             V v = node->get_value();
 
@@ -232,8 +246,8 @@ class SplayTree {
                     return left->insert(v, splay_tree);
                 }
                 else {
-                    set_left(node);
-                    node->splay();
+                    set_left(node, splay_tree);
+                    node->splay(splay_tree);
                     splay_tree.root = node;
 
                     return node;
@@ -244,25 +258,25 @@ class SplayTree {
                     return right->insert(v, splay_tree);
                 }
                 else {
-                    set_right(node);
-                    node->splay();
+                    set_right(node, splay_tree);
+                    node->splay(splay_tree);
                     splay_tree.root = node;
 
                     return node;
                 }
             }
             else {
-                splay();
+                splay(splay_tree);
                 splay_tree.root = get_ptr();
                 return get_ptr();
             }
         }
 
-        node_ptr_t insert(V v, SplayTree<V> &splay_tree) {
+        node_ptr_t insert(V v, SplayTree &splay_tree) {
             return insert(std::make_shared<Node>(v), splay_tree);
         }
 
-        node_ptr_t remove(V v, SplayTree<V> &splay_tree) {
+        node_ptr_t remove(V v, SplayTree &splay_tree) {
             auto this_ptr = get_ptr();
 
             if (v < value) {
@@ -270,7 +284,7 @@ class SplayTree {
                     return left->remove(v, splay_tree);
                 }
                 else {
-                    splay();
+                    splay(splay_tree);
                     splay_tree.root = get_ptr();
                     return get_ptr();
                 }
@@ -280,7 +294,7 @@ class SplayTree {
                     return right->remove(v, splay_tree);
                 }
                 else {
-                    splay();
+                    splay(splay_tree);
                     splay_tree.root = get_ptr();
                     return get_ptr();
                 }
@@ -291,10 +305,10 @@ class SplayTree {
                 if (left == nullptr && right == nullptr) {
                     if (get_parent() != nullptr) {
                         if (get_parent()->left == get_ptr()) {
-                            get_parent()->set_left(nullptr);
+                            get_parent()->set_left(nullptr, splay_tree);
                         }
                         else {
-                            get_parent()->set_right(nullptr);
+                            get_parent()->set_right(nullptr, splay_tree);
                         }
                     }
                     else {
@@ -309,10 +323,10 @@ class SplayTree {
                         child->remove_parent();
                     }
                     else if (get_parent()->left == get_ptr()) {
-                        get_parent()->set_left(child);
+                        get_parent()->set_left(child, splay_tree);
                     }
                     else {
-                        get_parent()->set_right(child);
+                        get_parent()->set_right(child, splay_tree);
                     }
                 }
                 else {
@@ -323,10 +337,10 @@ class SplayTree {
 
                     set_value(node->get_value());
                     if (node == left) {
-                        set_left(node->left);
+                        set_left(node->left, splay_tree);
                     }
                     else {
-                        node->get_parent()->set_right(node->left);
+                        node->get_parent()->set_right(node->left, splay_tree);
                     }
 
                     new_root = get_ptr();
@@ -334,7 +348,7 @@ class SplayTree {
 
 
                 if (new_root != nullptr) {
-                    new_root->splay();
+                    new_root->splay(splay_tree);
                 }
                 splay_tree.root = new_root;
 
@@ -366,28 +380,38 @@ class SplayTree {
             }
         }
 
-        node_ptr_t unpin_left_subtree() {
+        node_ptr_t unpin_left_subtree(const SplayTree &splay_tree) {
             auto node = left;
             if (node != nullptr) {
                 node->parent = node_weakptr_t();
             }
-            set_left(nullptr);
+            set_left(nullptr, splay_tree);
 
             return node;
         }
 
-        node_ptr_t unpin_right_subtree() {
+        node_ptr_t unpin_right_subtree(const SplayTree &splay_tree) {
             auto node = right;
             if (node != nullptr) {
                 node->parent = node_weakptr_t();
             }
-            set_right(nullptr);
+            set_right(nullptr, splay_tree);
 
             return node;
         }
 
         void remove_parent() {
             parent = node_weakptr_t();
+        }
+
+        static int get_function_value(node_ptr_t node, const Function &function) {
+            if (node == nullptr) {
+                return function.get_default_null();
+            }
+            else if (!node->function_values.contains(function.get_name())) {
+                node->function_values[function.get_name()] = function.get_default();
+            }
+            return node->function_values[function.get_name()];
         }
     };
 
@@ -544,15 +568,71 @@ class SplayTree {
         return root->remove(v, *this);
     }
 
+    explicit SplayTree(node_ptr_t root) : root(root) {}
+
+    using function_t = std::function<int(const V &, int, int)>;
+
+    std::map<std::string, Function> functions;
+
 public:
+
+    class Function {
+        std::string name;
+        function_t function;
+        int default_value;
+        int default_value_null;
+
+    public:
+        Function(std::string name, const function_t &function, const int default_value, const int default_value_null)
+            : name(std::move(name)), function(function), default_value(default_value),
+            default_value_null(default_value_null) {}
+
+        Function() = default;
+
+        Function &operator =(const Function &other) {
+            name = other.name;
+            function = other.function;
+            default_value = other.default_value;
+            default_value_null = other.default_value_null;
+            return *this;
+        }
+
+        int operator ()(const V &value, int left, int right) const {
+            return function(value, left, right);
+        }
+
+        const std::string &get_name() const {
+            return name;
+        }
+
+        int get_default() const {
+            return default_value;
+        }
+
+        int get_default_null() const {
+            return default_value_null;
+        }
+    };
+
     SplayTree() {
         root = nullptr;
     }
 
-    explicit SplayTree(node_ptr_t root) : root(root) {}
+    SplayTree(std::initializer_list<V> values) {
+        for (V value : values) {
+            insert(value);
+        }
+    }
 
-    SplayTree(std::initializer_list<V> list) {
-        for (V value : list) {
+    explicit SplayTree(std::initializer_list<Function> functions) {
+        for (auto function : functions) {
+            this->functions[function.get_name()] = function;
+        }
+    }
+
+    explicit SplayTree(std::initializer_list<V> values,
+                       std::initializer_list<Function> functions) : SplayTree(functions) {
+        for (V value : values) {
             insert(value);
         }
     }
@@ -613,9 +693,9 @@ public:
         }
     }
 
-    SplayTree<V> erase_less(V value) {
+    SplayTree erase_less(V value) {
         _search(value);
-        auto result = SplayTree(root->unpin_left_subtree());
+        auto result = SplayTree(root->unpin_left_subtree(*this));
 
         auto v = root->get_value();
         if (v < value) {
@@ -626,9 +706,9 @@ public:
         return result;
     }
 
-    SplayTree<V> erase_greater(V value) {
+    SplayTree erase_greater(V value) {
         _search(value);
-        auto result = SplayTree(root->unpin_right_subtree());
+        auto result = SplayTree(root->unpin_right_subtree(*this));
 
         auto v = root->get_value();
         if (v > value) {
@@ -671,7 +751,7 @@ public:
         return end();
     }
 
-    void swap(SplayTree<V> &other) {
+    void swap(SplayTree &other) {
         std::swap(root, other.root);
     }
 
@@ -725,6 +805,14 @@ public:
 
             return Iterator<true>(InternalIterator<true>(traversal));
         }
+    }
+
+    int get_value(const std::string &function_name) {
+        auto function_it = functions.find(function_name);
+        if (function_it == functions.end()) {
+            throw std::invalid_argument("No function named" + function_name + "found.");
+        }
+        return Node::get_function_value(root, function_it->second);
     }
 
     void print() {
