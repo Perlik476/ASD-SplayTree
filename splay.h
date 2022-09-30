@@ -6,13 +6,62 @@
 #include <map>
 #include <functional>
 #include <variant>
+#include <optional>
 
-template<class V>
+template<class V, class... FunctionTypes>
 class SplayTree {
 public:
-    class Function;
+    template <class T>
+    class Function {
+        using function_t = std::function<const T(const V &, const T &, const T &)>;
+
+        std::string name;
+        function_t function;
+        T default_value;
+        T default_value_null;
+
+    public:
+        constexpr Function(std::string name, function_t &&function, T default_value, T default_value_null)
+                : name(std::move(name)), function(std::move(function)), default_value(default_value),
+                  default_value_null(default_value_null) {}
+
+        Function() = default;
+
+        ~Function() = default;
+
+        Function &operator =(const Function &other) {
+            name = other.name;
+            function = other.function;
+            default_value = other.default_value;
+            default_value_null = other.default_value_null;
+            return *this;
+        }
+
+        const T operator ()(const V &value, const T &left, const T &right) const {
+            return function(value, left, right);
+        }
+
+        const function_t &get_function() const {
+            return function;
+        }
+
+        const std::string &get_name() const {
+            return name;
+        }
+
+        const T &get_default() const {
+            return default_value;
+        }
+
+        const T &get_default_null() const {
+            return default_value_null;
+        }
+    };
 
 private:
+    using polymorphic_function_types_t = std::variant<int, FunctionTypes...>;
+    using polymorphic_function_t = std::variant<Function<int>, Function<FunctionTypes>...>;
+
     class Node : public std::enable_shared_from_this<Node> {
         using node_ptr_t = std::shared_ptr<Node>;
         using node_weakptr_t = std::weak_ptr<Node>;
@@ -22,7 +71,7 @@ private:
         V value;
         size_t subtree_size = 1;
 
-        std::map<std::string, int> function_values;
+        std::map<std::string, polymorphic_function_types_t> function_values;
 
         node_ptr_t get_ptr() {
             return this->shared_from_this();
@@ -36,12 +85,22 @@ private:
             return parent.lock();
         }
 
+//        template <class T>
+//        static const T evaluate_function(const Function<T> &function, const T &v, const T &lv, const T &rv) {
+//            auto func = function.get_function();
+//            auto result = func(v, lv, rv);
+//            return result;
+//        }
+
         void update(const SplayTree &splay) {
             subtree_size = 1 + get_subtree_size(right) + get_subtree_size(left);
 
             for (auto &[name, function] : splay.functions) {
-                function_values[name] = function(get_value(), get_function_value(left, function),
-                                                                get_function_value(right, function));
+                auto left_value = std::visit([&](auto &&func) { return get_function_value(left, func); }, function);
+                auto right_value = std::visit([&](auto &&func) { return get_function_value(right, func); }, function);
+                auto new_value = std::visit(
+                        [&](auto &&func) { return func(value, left_value, right_value); }, function);
+                function_values[name] = new_value;
             }
         }
 
@@ -404,14 +463,15 @@ private:
             parent = node_weakptr_t();
         }
 
-        static int get_function_value(node_ptr_t node, const Function &function) {
+        template <class T>
+        static const T get_function_value(node_ptr_t node, const Function<T> &function) {
             if (node == nullptr) {
                 return function.get_default_null();
             }
             else if (!node->function_values.contains(function.get_name())) {
                 node->function_values[function.get_name()] = function.get_default();
             }
-            return node->function_values[function.get_name()];
+            return std::visit([&](auto &&x) { return x; }, node->function_values[function.get_name()]);
         }
     };
 
@@ -570,49 +630,24 @@ private:
 
     explicit SplayTree(node_ptr_t root) : root(root) {}
 
-    using function_t = std::function<int(const V &, int, int)>;
+    std::map<std::string, polymorphic_function_t> functions;
 
-    std::map<std::string, Function> functions;
+//    template <std::size_t I = 0>
+//    polymorphic_function_t get_function(const polymorphic_function_t &function)
+//    {
+//        if constexpr (I < std::variant_size_v<polymorphic_function_t>)
+//        {
+//            auto result = function.get<std::optional<std::variant_alternative_t<I, polymorphic_function_t>>>();
+//
+//            return result ? std::move(*result) : parse<I + 1>(function);
+//        }
+//    }
+
+    std::type_info const get_function_type(const polymorphic_function_t &function){
+        return std::visit([](auto &&x) -> decltype(auto) { return typeid(x); }, function);
+    }
 
 public:
-
-    class Function {
-        std::string name;
-        function_t function;
-        int default_value;
-        int default_value_null;
-
-    public:
-        Function(std::string name, const function_t &function, const int default_value, const int default_value_null)
-            : name(std::move(name)), function(function), default_value(default_value),
-            default_value_null(default_value_null) {}
-
-        Function() = default;
-
-        Function &operator =(const Function &other) {
-            name = other.name;
-            function = other.function;
-            default_value = other.default_value;
-            default_value_null = other.default_value_null;
-            return *this;
-        }
-
-        int operator ()(const V &value, int left, int right) const {
-            return function(value, left, right);
-        }
-
-        const std::string &get_name() const {
-            return name;
-        }
-
-        int get_default() const {
-            return default_value;
-        }
-
-        int get_default_null() const {
-            return default_value_null;
-        }
-    };
 
     SplayTree() {
         root = nullptr;
@@ -624,14 +659,14 @@ public:
         }
     }
 
-    explicit SplayTree(std::initializer_list<Function> functions) {
+    explicit constexpr SplayTree(std::initializer_list<polymorphic_function_t> functions) {
         for (auto function : functions) {
-            this->functions[function.get_name()] = function;
+            this->functions[std::visit([](auto &&func) { return func.get_name(); }, function)] = function;
         }
     }
 
     explicit SplayTree(std::initializer_list<V> values,
-                       std::initializer_list<Function> functions) : SplayTree(functions) {
+                       std::initializer_list<polymorphic_function_t> functions) : SplayTree(functions) {
         for (V value : values) {
             insert(value);
         }
@@ -807,12 +842,16 @@ public:
         }
     }
 
-    int get_value(const std::string &function_name) {
+    template<class T>
+    T get_value(const std::string &function_name) const {
         auto function_it = functions.find(function_name);
         if (function_it == functions.end()) {
             throw std::invalid_argument("No function named" + function_name + "found.");
         }
-        return Node::get_function_value(root, function_it->second);
+
+        auto &polymorphic_func = function_it->second;
+
+        return std::visit([&](auto &&func) { return Node::get_function_value(root, func); }, polymorphic_func);
     }
 
     void print() {
