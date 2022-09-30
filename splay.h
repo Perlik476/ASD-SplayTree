@@ -19,6 +19,10 @@ class SplayTree {
             return this->shared_from_this();
         }
 
+        std::shared_ptr<const Node> get_ptr() const {
+            return this->shared_from_this();
+        }
+
         node_ptr_t get_parent() {
             return parent.lock();
         }
@@ -185,34 +189,38 @@ class SplayTree {
             value = _value;
         }
 
-        node_ptr_t search(V v, SplayTree<V> &splay_tree) {
+        std::shared_ptr<const Node> search_no_splay(V v, const SplayTree<V> &splay_tree) const {
             auto this_ptr = get_ptr();
 
             if (v < value) {
                 if (left != nullptr) {
-                    return left->search(v, splay_tree);
+                    return left->search_no_splay(v, splay_tree);
                 }
                 else {
-                    splay();
-                    splay_tree.root = get_ptr();
                     return get_ptr();
                 }
             }
             else if (v > value) {
                 if (right != nullptr) {
-                    return right->search(v, splay_tree);
+                    return right->search_no_splay(v, splay_tree);
                 }
                 else {
-                    splay();
-                    splay_tree.root = get_ptr();
                     return get_ptr();
                 }
             }
             else {
-                splay();
-                splay_tree.root = get_ptr();
                 return get_ptr();
             }
+        }
+
+        node_ptr_t search(V v, SplayTree<V> &splay_tree) {
+            auto node_const = search_no_splay(v, splay_tree);
+            node_ptr_t node = ((Node &)(*node_const)).get_ptr();
+
+            node->splay();
+            splay_tree.root = node;
+
+            return node;
         }
 
         node_ptr_t insert(node_ptr_t node, SplayTree<V> &splay_tree) {
@@ -524,6 +532,10 @@ class SplayTree {
         return root->search(v, *this);
     }
 
+    auto _search_no_splay(V v) const {
+        return root->search_no_splay(v, *this);
+    }
+
     node_ptr_t _insert(V v) {
         return root->insert(v, *this);
     }
@@ -576,6 +588,15 @@ public:
         }
         _search(value);
         V found = root->get_value();
+        return found == value;
+    }
+
+    bool contains(V value) const {
+        if (root == nullptr) {
+            return false;
+        }
+        auto node = _search_no_splay(value);
+        V found = node->get_value();
         return found == value;
     }
 
@@ -652,6 +673,14 @@ public:
 
     void swap(SplayTree<V> &other) {
         std::swap(root, other.root);
+    }
+
+    size_t count(const V value) {
+        return find(value) != end();
+    }
+
+    size_t count(const V value) const {
+        return find(value) != end();
     }
 
     void print() {

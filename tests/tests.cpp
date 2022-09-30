@@ -193,6 +193,21 @@ void test_swap_basic() {
     assert(equals({2, 1, 3, 7}, splay2));
 }
 
+void test_contains_basic() {
+    SplayTree<int> splay = {1, 4, 9, 12, 5, 17};
+
+
+    assert(splay.contains(1));
+    assert(splay.contains(9));
+    assert(!splay.contains(6));
+
+    const SplayTree<int> splay2 = splay;
+
+    assert(splay2.contains(1));
+    assert(splay2.contains(9));
+    assert(!splay2.contains(6));
+}
+
 class Test {
     const std::function<void()> test;
     std::string name;
@@ -219,7 +234,8 @@ int main() {
             Test(test_split_basic, "split basic"),
             Test(test_merge_basic, "merge basic"),
             Test(test_find_basic, "find basic"),
-            Test(test_swap_basic, "swap basic")
+            Test(test_swap_basic, "swap basic"),
+            Test(test_contains_basic, "contains basic")
     };
 
     for (auto test : tests) {
