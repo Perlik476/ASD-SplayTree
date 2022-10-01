@@ -679,7 +679,7 @@ public:
         return Iterator<false>(internal_rend());
     }
 
-    Iterator<true> insert(V value) {
+    Iterator<true> insert(const V &value) {
         if (root == nullptr) {
             root = std::make_shared<Node>(value);
         }
@@ -690,7 +690,13 @@ public:
         return Iterator<true>(traversal_t({ root }));
     }
 
-    bool contains(V value) {
+    void insert(std::initializer_list<V> values) {
+        for (auto value : values) {
+            insert(value);
+        }
+    }
+
+    bool contains(const V &value) {
         if (root == nullptr) {
             return false;
         }
@@ -701,7 +707,7 @@ public:
         return !Compare{}(found, value) && !Compare{}(value, found);
     }
 
-    bool contains(V value) const {
+    bool contains(const V &value) const {
         if (root == nullptr) {
             return false;
         }
@@ -716,7 +722,7 @@ public:
         return Node::get_subtree_size(root);
     }
 
-    bool erase(V value) {
+    bool erase(const V &value) {
         if (!contains(value)) {
             return false;
         }
@@ -725,7 +731,7 @@ public:
         return true;
     }
 
-    SplayTree erase_less(V value) {
+    SplayTree erase_less(const V &value) {
         _search(value);
         auto result = SplayTree(root->unpin_left_subtree(*this));
 
@@ -738,7 +744,7 @@ public:
         return result;
     }
 
-    SplayTree erase_greater(V value) {
+    SplayTree erase_greater(const V &value) {
         _search(value);
         auto result = SplayTree(root->unpin_right_subtree(*this));
 
@@ -768,13 +774,13 @@ public:
         }
     }
 
-    Iterator<true> find(const V value) {
+    Iterator<true> find(const V &value) {
         _search(value);
         return !Compare{}(root->get_value(), value) && !Compare{}(value, root->get_value()) ?
             Iterator<true>(traversal_t({root})) : end();
     }
 
-    Iterator<true> find(const V value) const {
+    Iterator<true> find(const V &value) const {
         for (auto it = begin(); it != end(); it++) {
             if (*it == value) {
                 return it;
@@ -787,15 +793,15 @@ public:
         std::swap(root, other.root);
     }
 
-    size_t count(const V value) {
+    size_t count(const V &value) {
         return find(value) != end();
     }
 
-    size_t count(const V value) const {
+    size_t count(const V &value) const {
         return find(value) != end();
     }
 
-    Iterator<true> lower_bound(const V value) {
+    Iterator<true> lower_bound(const V &value) {
         _search(value);
         if (!Compare{}(root->get_value(), value)) {
             return Iterator<true>(traversal_t({root}));
@@ -817,7 +823,7 @@ public:
         }
     }
 
-    Iterator<true> upper_bound(const V value) {
+    Iterator<true> upper_bound(const V &value) {
         _search(value);
         if (Compare{}(value, root->get_value())) {
             return Iterator<true>(traversal_t({root}));
