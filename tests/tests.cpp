@@ -261,10 +261,7 @@ void test_function_basic() {
 
     splay_t splay({ even_counter, max });
 
-    auto set = std::set({2, 1, 3, 7, 6, 9, 4, 2});
-    for (auto x : set) {
-        splay.insert(x);
-    }
+    splay.insert({2, 1, 3, 7, 6, 9, 4, 2});
 
     assert(splay.get_value<int>("even") == 3);
     assert(splay.get_value<int>("max") == 9);
@@ -290,7 +287,7 @@ void test_comparer_basic() {
 }
 
 void test_insert_iterator() {
-    SplayTree<int> splay = {2, 1, 3, 7, 4, 2};
+    SplayTree<int> splay = {2, 1, 3, 7, 4};
 
     auto it = splay.insert(6);
     assert(*it++ == 6);
@@ -299,6 +296,21 @@ void test_insert_iterator() {
 
     it = splay.insert(2);
     assert(*it == 2);
+}
+
+void test_erase_iterator() {
+    SplayTree<int> splay = {2, 1, 3, 7, 4};
+
+    auto it = splay.begin();
+    it++; it++; it++;
+    it = splay.erase(it);
+    assert(*it == 7);
+
+    it = splay.erase(it);
+    assert(it == splay.end());
+
+    it = splay.erase(it);
+    assert(it == splay.end());
 }
 
 class Test {

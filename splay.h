@@ -564,8 +564,8 @@ private:
     public:
         using iterator_category = std::input_iterator_tag;
         using difference_tag = std::ptrdiff_t;
-        using value_type = V;
-        using pointer = V *;
+        using value_type = const V;
+        using pointer = const V *;
         using reference = const V &;
 
         Iterator(InternalIterator<increasing_direction> iterator) : iterator(iterator) {}
@@ -586,7 +586,7 @@ private:
             return (*iterator).get_value();
         }
 
-        pointer operator->() {
+        pointer operator->() const {
             return &(iterator->get_value());
         }
 
@@ -731,13 +731,16 @@ public:
         return true;
     }
 
-    // TODO
     Iterator<true> erase(const Iterator<true> &pos) {
-        auto value = pos->get_value();
+        if (pos == end()) {
+            return end();
+        }
 
-        if (erase(*pos)) {
+        auto value = *pos;
+
+        if (erase(value)) {
             auto it = Iterator<true>(traversal_t({ root }));
-            if (Compare{}(it->get_value(), value)) {
+            if (Compare{}(*it, value)) {
                 it++;
             }
             return it;
