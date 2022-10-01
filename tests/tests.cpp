@@ -289,6 +289,18 @@ void test_comparer_basic() {
     assert(*it == 3);
 }
 
+void test_insert_iterator() {
+    SplayTree<int> splay = {2, 1, 3, 7, 4, 2};
+
+    auto it = splay.insert(6);
+    assert(*it++ == 6);
+    assert(*it++ == 7);
+    assert(it == splay.end());
+
+    it = splay.insert(2);
+    assert(*it == 2);
+}
+
 class Test {
     const std::function<void()> test;
     std::string name;
@@ -319,7 +331,8 @@ int main() {
             Test(test_contains_basic, "contains basic"),
             Test(test_lower_upper_bound_basic, "lower/upper bound basic"),
             Test(test_function_basic, "function basic"),
-            Test(test_comparer_basic, "comparer basic")
+            Test(test_comparer_basic, "comparer basic"),
+            Test(test_insert_iterator, "insert iterator")
     };
 
     for (auto test : tests) {
