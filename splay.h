@@ -37,7 +37,7 @@ public:
             return *this;
         }
 
-        const T operator ()(const V &value, const T &left, const T &right) const {
+        T operator ()(const V &value, const T &left, const T &right) const {
             return function(value, left, right);
         }
 
@@ -59,6 +59,15 @@ public:
     };
 
 private:
+    class Node;
+
+    template<bool increasing_direction>
+    class InternalIterator;
+
+    using node_ptr_t = std::shared_ptr<Node>;
+    using const_node_ptr_t = std::shared_ptr<const Node>;
+    using traversal_t = std::stack<const_node_ptr_t>;
+
     using polymorphic_function_types_t = std::variant<int, FunctionTypes...>;
     using polymorphic_function_t = std::variant<Function<int>, Function<FunctionTypes>...>;
 
@@ -77,7 +86,7 @@ private:
             return this->shared_from_this();
         }
 
-        std::shared_ptr<const Node> get_ptr() const {
+        const_node_ptr_t get_ptr() const {
             return this->shared_from_this();
         }
 
@@ -253,33 +262,39 @@ private:
             value = _value;
         }
 
-        std::shared_ptr<const Node> search_no_splay(V v, const SplayTree &splay_tree) const {
+        InternalIterator<true> search_no_splay(V v, const SplayTree &splay_tree, traversal_t &traversal) const {
             auto this_ptr = get_ptr();
+            traversal.push(this_ptr);
 
             if (Compare{}(v, value)) {
                 if (left != nullptr) {
-                    return left->search_no_splay(v, splay_tree);
+                    return left->search_no_splay(v, splay_tree, traversal);
                 }
                 else {
-                    return get_ptr();
+                    return InternalIterator<true>(traversal);
                 }
             }
             else if (Compare{}(value, v)) {
                 if (right != nullptr) {
-                    return right->search_no_splay(v, splay_tree);
+                    return right->search_no_splay(v, splay_tree, traversal);
                 }
                 else {
-                    return get_ptr();
+                    return InternalIterator<true>(traversal);
                 }
             }
             else {
-                return get_ptr();
+                return InternalIterator<true>(traversal);
             }
         }
 
+        InternalIterator<true> search_no_splay(V v, const SplayTree &splay_tree) const {
+            auto traversal = traversal_t();
+            return search_no_splay(v, splay_tree, traversal);
+        }
+
         node_ptr_t search(V v, SplayTree &splay_tree) {
-            auto node_const = search_no_splay(v, splay_tree);
-            node_ptr_t node = ((Node &)(*node_const)).get_ptr();
+            auto node_it = search_no_splay(v, splay_tree);
+            auto node = ((Node &)(*node_it)).get_ptr();
 
             node->splay(splay_tree);
             splay_tree.root = node;
@@ -406,7 +421,7 @@ private:
             }
         }
 
-        void get_next(std::stack<node_ptr_t> &traversal) {
+        void get_next(traversal_t &traversal) const {
             if (right != nullptr) {
                 auto node = right;
 
@@ -418,7 +433,7 @@ private:
             }
         }
 
-        void get_previous(std::stack<node_ptr_t> &traversal) {
+        void get_previous(traversal_t &traversal) const {
             if (left != nullptr) {
                 auto node = left;
 
@@ -466,16 +481,14 @@ private:
         }
     };
 
-    using node_ptr_t = std::shared_ptr<Node>;
-
     node_ptr_t root;
 
     template<bool increasing_direction>
     class InternalIterator {
-        std::stack<node_ptr_t> traversal;
+        traversal_t traversal;
 
         void next() {
-            node_ptr_t node = traversal.top();
+            auto node = traversal.top();
             traversal.pop();
             if (increasing_direction) {
                 node->get_next(traversal);
@@ -488,11 +501,11 @@ private:
     public:
         using iterator_category = std::input_iterator_tag;
         using difference_tag = std::ptrdiff_t;
-        using value_type = Node;
-        using pointer = node_ptr_t;
+        using value_type = const Node;
+        using pointer = const_node_ptr_t;
         using reference = const Node &;
 
-        explicit InternalIterator(std::stack<node_ptr_t> traversal) : traversal(traversal) {}
+        explicit InternalIterator(traversal_t traversal) : traversal(traversal) {}
 
         explicit InternalIterator(const SplayTree *splay) {
             auto node = splay->root;
@@ -557,6 +570,8 @@ private:
 
         Iterator(InternalIterator<increasing_direction> iterator) : iterator(iterator) {}
 
+        Iterator(traversal_t traversal) : iterator(InternalIterator<increasing_direction>(traversal)) {}
+
         Iterator(const Iterator &other) : Iterator(other.iterator) {}
 
         bool operator==(const Iterator &other) const {
@@ -592,7 +607,7 @@ private:
     }
 
     InternalIterator<true> internal_end() const {
-        return InternalIterator<true>(std::stack<node_ptr_t>());
+        return InternalIterator<true>(traversal_t());
     }
 
     InternalIterator<false> internal_rbegin() const {
@@ -600,10 +615,10 @@ private:
     }
 
     InternalIterator<false> internal_rend() const {
-        return InternalIterator<false>(std::stack<node_ptr_t>());
+        return InternalIterator<false>(traversal_t());
     }
 
-    node_ptr_t _search(V v) {
+    auto _search(V v) {
         return root->search(v, *this);
     }
 
@@ -611,11 +626,11 @@ private:
         return root->search_no_splay(v, *this);
     }
 
-    node_ptr_t _insert(V v) {
+    auto _insert(V v) {
         return root->insert(v, *this);
     }
 
-    node_ptr_t _remove(V v) {
+    auto _remove(V v) {
         return root->remove(v, *this);
     }
 
@@ -664,21 +679,25 @@ public:
         return Iterator<false>(internal_rend());
     }
 
-    void insert(V value) {
+    Iterator<true> insert(V value) {
         if (root == nullptr) {
             root = std::make_shared<Node>(value);
         }
         else {
             root->insert(value, *this);
         }
+
+        return Iterator<true>(traversal_t({ root }));
     }
 
     bool contains(V value) {
         if (root == nullptr) {
             return false;
         }
+
         _search(value);
         V found = root->get_value();
+
         return !Compare{}(found, value) && !Compare{}(value, found);
     }
 
@@ -686,8 +705,10 @@ public:
         if (root == nullptr) {
             return false;
         }
+
         auto node = _search_no_splay(value);
         V found = node->get_value();
+
         return !Compare{}(found, value) && !Compare{}(value, found);
     }
 
@@ -695,13 +716,13 @@ public:
         return Node::get_subtree_size(root);
     }
 
-    void erase(V value) {
-        if (root == nullptr) {
-            return;
+    bool erase(V value) {
+        if (!contains(value)) {
+            return false;
         }
-        else {
-            _remove(value);
-        }
+
+        _remove(value);
+        return true;
     }
 
     SplayTree erase_less(V value) {
@@ -750,7 +771,7 @@ public:
     Iterator<true> find(const V value) {
         _search(value);
         return !Compare{}(root->get_value(), value) && !Compare{}(value, root->get_value()) ?
-            Iterator<true>(InternalIterator<true>(std::stack<node_ptr_t>({root}))) : end();
+            Iterator<true>(traversal_t({root})) : end();
     }
 
     Iterator<true> find(const V value) const {
@@ -777,7 +798,7 @@ public:
     Iterator<true> lower_bound(const V value) {
         _search(value);
         if (!Compare{}(root->get_value(), value)) {
-            return Iterator<true>(InternalIterator<true>(std::stack<node_ptr_t>({root})));
+            return Iterator<true>(traversal_t({root}));
         }
         else {
             if (root->get_right() == nullptr) {
@@ -785,21 +806,21 @@ public:
             }
 
             node_ptr_t node = root->get_right();
-            std::stack<node_ptr_t> traversal({ root, root->get_right() });
+            traversal_t traversal({ root, root->get_right() });
 
             while (node->get_left() != nullptr) {
                 node = node->get_left();
                 traversal.push(node);
             }
 
-            return Iterator<true>(InternalIterator<true>(traversal));
+            return Iterator<true>(traversal);
         }
     }
 
     Iterator<true> upper_bound(const V value) {
         _search(value);
         if (Compare{}(value, root->get_value())) {
-            return Iterator<true>(InternalIterator<true>(std::stack<node_ptr_t>({root})));
+            return Iterator<true>(traversal_t({root}));
         }
         else {
             if (root->get_right() == nullptr) {
@@ -807,14 +828,14 @@ public:
             }
 
             node_ptr_t node = root->get_right();
-            std::stack<node_ptr_t> traversal({ root, root->get_right() });
+            traversal_t traversal({ root, root->get_right() });
 
             while (node->get_left() != nullptr) {
                 node = node->get_left();
                 traversal.push(node);
             }
 
-            return Iterator<true>(InternalIterator<true>(traversal));
+            return Iterator<true>(traversal);
         }
     }
 
