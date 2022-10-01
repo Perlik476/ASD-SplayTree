@@ -1,12 +1,9 @@
 #include <iostream>
-#include <utility>
-#include <vector>
 #include <memory>
 #include <stack>
 #include <map>
 #include <functional>
 #include <variant>
-#include <optional>
 
 template<class V, class Compare = std::less<V>, class... FunctionTypes>
 class SplayTree {
