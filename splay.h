@@ -731,6 +731,22 @@ public:
         return true;
     }
 
+    // TODO
+    Iterator<true> erase(const Iterator<true> &pos) {
+        auto value = pos->get_value();
+
+        if (erase(*pos)) {
+            auto it = Iterator<true>(traversal_t({ root }));
+            if (Compare{}(it->get_value(), value)) {
+                it++;
+            }
+            return it;
+        }
+        else {
+            return end();
+        }
+    }
+
     SplayTree erase_less(const V &value) {
         _search(value);
         auto result = SplayTree(root->unpin_left_subtree(*this));
