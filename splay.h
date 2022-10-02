@@ -40,7 +40,7 @@ public:
             return function;
         }
 
-        const FunctionType &get_default_null() const {
+        const FunctionType get_default_null() const {
             return default_value_null;
         }
     };
@@ -64,7 +64,7 @@ private:
         V value;
         size_t subtree_size = 1;
 
-         FunctionType function_value;
+        FunctionType function_value;
 
         node_ptr_t get_ptr() {
             return this->shared_from_this();

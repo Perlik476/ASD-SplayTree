@@ -252,7 +252,7 @@ void test_lower_upper_bound_basic() {
 void test_function_basic() {
     SplayTree<int>::Function even_counter = { [](int v, int left, int right) { return (v % 2 == 0) + left + right; }, 0 };
 
-    SplayTree<int> splay({2, 1, 3, 7, 6, 9, 4, 2}, even_counter);
+    SplayTree<int> splay({ 2, 1, 3, 7, 6, 9, 4, 2 }, even_counter);
     assert(splay.get_function_value() == 3);
 
     using splay_pairs_t = SplayTree<int, std::less<>, std::pair<int, int>>;
@@ -263,8 +263,24 @@ void test_function_basic() {
             },
             { std::numeric_limits<int>::min(), std::numeric_limits<int>::max() } };
 
-    splay_pairs_t splay_pairs = {{2, 1, 3, 7, 6, 9, 4, 2}, min_max};
+    splay_pairs_t splay_pairs = { { 2, 1, 3, 7, 6, 9, 4, 2 }, min_max };
     assert(splay_pairs.get_function_value().first == 9 && splay_pairs.get_function_value().second == 1);
+
+
+    using splay_str_t = SplayTree<int, std::less<>, std::string>;
+    splay_str_t::Function to_str = {
+            [](int v, const std::string &left, const std::string &right) {
+                std::stringstream ss;
+                ss << left << v << right;
+                return ss.str();
+            }, "" };
+
+    splay_str_t splay_to_str = { { 2, 1, 3, 7, 6, 9, 4, 2 }, to_str };
+    assert(splay_to_str.get_function_value() == "1234679");
+
+    auto splay_to_str_less = splay_to_str.erase_less(4);
+    assert(splay_to_str_less.get_function_value() == "123");
+    assert(splay_to_str.get_function_value() == "4679");
 }
 
 void test_comparer_basic() {
