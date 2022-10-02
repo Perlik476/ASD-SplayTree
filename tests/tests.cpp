@@ -250,21 +250,18 @@ void test_lower_upper_bound_basic() {
 }
 
 void test_function_basic() {
-    using splay_t = SplayTree<int, std::less<int>, std::pair<int, int>>;
+    using splay_t = SplayTree<int>;
 
-    splay_t::Function<int> even_counter = { "even",
-                                    [](int v, int left, int right) { return (v % 2 == 0) + left + right; }, 1, 0 };
+    splay_t::Function<int> even_counter = { [](int v, int left, int right) { return (v % 2 == 0) + left + right; }, 0 };
 
-    splay_t::Function<int> max = { "max",
-                                     [](int v, int left, int right) { return std::max(v, std::max(left, right)); },
-                                     std::numeric_limits<int>::min(), std::numeric_limits<int>::min() };
+    splay_t::Function<int> max = { [](int v, int left, int right) { return std::max(v, std::max(left, right)); },
+                                     std::numeric_limits<int>::min() };
 
-    splay_t splay({ even_counter, max });
+    splay_t splay({2, 1, 3, 7, 6, 9, 4, 2}, even_counter);
+    assert(splay.get_function_value() == 3);
 
-    splay.insert({2, 1, 3, 7, 6, 9, 4, 2});
-
-    assert(splay.get_value<int>("even") == 3);
-    assert(splay.get_value<int>("max") == 9);
+    splay = splay_t({2, 1, 3, 7, 6, 9, 4, 2}, max);
+    assert(splay.get_function_value() == 9);
 }
 
 void test_comparer_basic() {
