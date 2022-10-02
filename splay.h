@@ -226,30 +226,6 @@ private:
             return value;
         }
 
-        void print() {
-            std::cout << value
-                      << ": left: " << (left != nullptr ? left->get_value() : -1)
-                      << ", right: " << (right != nullptr ? right->get_value() : -1)
-                      << ", parent: " << (get_parent() != nullptr ? get_parent()->get_value() : -1)
-                      << ", size=" << get_subtree_size()
-                      << std::endl;
-        }
-
-        void _print_all() {
-            print();
-            if (left != nullptr) {
-                left->_print_all();
-            }
-            if (right != nullptr) {
-                right->_print_all();
-            }
-        }
-
-        void print_all() {
-            _print_all();
-            std::cout << std::endl;
-        }
-
         void set_value(V _value) {
             value = _value;
         }
@@ -702,7 +678,7 @@ public:
         return !compare(found, value) && !compare(value, found);
     }
 
-    size_t size() const {
+    [[nodiscard]] size_t size() const {
         return Node::get_subtree_size(root);
     }
 
@@ -857,9 +833,5 @@ public:
         root = other.root;
 
         return *this;
-    }
-
-    void print() {
-        root->print_all();
     }
 };

@@ -8,24 +8,6 @@
 #include <limits>
 
 template <typename T>
-void print(const std::set<T> &set) {
-    std::cout << "set size = " << set.size() << std::endl;
-    for (auto x : set) {
-        std::cout << x << " ";
-    }
-    std::cout << std::endl;
-}
-
-template <typename T>
-void print(const SplayTree<T> &splay) {
-    std::cout << "splay size = " << splay.size() << std::endl;
-    for (auto x : splay) {
-        std::cout << x << " ";
-    }
-    std::cout << std::endl;
-}
-
-template <typename T>
 bool equals(const std::set<T> &set, const SplayTree<T> &splay) {
     if (set.size() != splay.size()) {
         return false;
