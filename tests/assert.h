@@ -9,6 +9,6 @@ void _assert(const char *msg, const char *file, int line) {
         << std::string(file) << "' at line " << line << ".").str());
 }
 
-#define assert(EXPR) (void)((EXPR) || (_assert(#EXPR, __FILE_NAME__, __LINE__), 0))
+#define assert(EXPR) (void)((EXPR) || (_assert(#EXPR, __FILE__, __LINE__), 0))
 
 #endif // SPLAY_ASSERT_H
