@@ -250,18 +250,21 @@ void test_lower_upper_bound_basic() {
 }
 
 void test_function_basic() {
-    using splay_t = SplayTree<int>;
+    SplayTree<int>::Function even_counter = { [](int v, int left, int right) { return (v % 2 == 0) + left + right; }, 0 };
 
-    splay_t::Function<int> even_counter = { [](int v, int left, int right) { return (v % 2 == 0) + left + right; }, 0 };
-
-    splay_t::Function<int> max = { [](int v, int left, int right) { return std::max(v, std::max(left, right)); },
-                                     std::numeric_limits<int>::min() };
-
-    splay_t splay({2, 1, 3, 7, 6, 9, 4, 2}, even_counter);
+    SplayTree<int> splay({2, 1, 3, 7, 6, 9, 4, 2}, even_counter);
     assert(splay.get_function_value() == 3);
 
-    splay = splay_t({2, 1, 3, 7, 6, 9, 4, 2}, max);
-    assert(splay.get_function_value() == 9);
+    using splay_pairs_t = SplayTree<int, std::less<>, std::pair<int, int>>;
+    splay_pairs_t::Function min_max = {
+            [](int v, std::pair<int, int> left, std::pair<int, int> right) -> std::pair<int, int> {
+                return { std::max(v, std::max(left.first, right.first)),
+                         std::min(v, std::min(left.second, right.second)) };
+            },
+            { std::numeric_limits<int>::min(), std::numeric_limits<int>::max() } };
+
+    splay_pairs_t splay_pairs = {{2, 1, 3, 7, 6, 9, 4, 2}, min_max};
+    assert(splay_pairs.get_function_value().first == 9 && splay_pairs.get_function_value().second == 1);
 }
 
 void test_comparer_basic() {

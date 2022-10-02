@@ -8,15 +8,14 @@
 template<class V, class Compare = std::less<V>, class FunctionType = int>
 class SplayTree {
 public:
-    template <class T>
     class Function {
-        using function_t = std::function<const T(const V &, const T &, const T &)>;
+        using function_t = std::function<const FunctionType(const V &, const FunctionType &, const FunctionType &)>;
 
         function_t function;
-        T default_value_null;
+        FunctionType default_value_null;
 
     public:
-        constexpr Function(function_t &&function, T default_value_null)
+        constexpr Function(function_t &&function, FunctionType default_value_null)
                 : function(std::move(function)), default_value_null(default_value_null) {}
 
         Function() = default;
@@ -33,7 +32,7 @@ public:
             return static_cast<bool>(function);
         }
 
-        T operator ()(const V &value, const T &left, const T &right) const {
+        FunctionType operator ()(const V &value, const FunctionType &left, const FunctionType &right) const {
             return function(value, left, right);
         }
 
@@ -41,7 +40,7 @@ public:
             return function;
         }
 
-        const T &get_default_null() const {
+        const FunctionType &get_default_null() const {
             return default_value_null;
         }
     };
@@ -56,9 +55,6 @@ private:
     using const_node_ptr_t = std::shared_ptr<const Node>;
     using traversal_t = std::stack<const_node_ptr_t>;
 
-    using function_type_t = FunctionType;
-    using function_t = Function<FunctionType>;
-
     class Node : public std::enable_shared_from_this<Node> {
         using node_ptr_t = std::shared_ptr<Node>;
         using node_weakptr_t = std::weak_ptr<Node>;
@@ -68,7 +64,7 @@ private:
         V value;
         size_t subtree_size = 1;
 
-        function_type_t function_value;
+         FunctionType function_value;
 
         node_ptr_t get_ptr() {
             return this->shared_from_this();
@@ -456,8 +452,7 @@ private:
             parent = node_weakptr_t();
         }
 
-        template <class T>
-        static const T get_function_value(node_ptr_t node, const Function<T> &function) {
+        static const FunctionType get_function_value(node_ptr_t node, const Function &function) {
             if (node == nullptr) {
                 return function.get_default_null();
             }
@@ -620,7 +615,7 @@ private:
 
     explicit SplayTree(node_ptr_t root) : root(root) {}
 
-    function_t function;
+     Function function;
 
 public:
 
@@ -634,10 +629,10 @@ public:
         }
     }
 
-    explicit constexpr SplayTree(function_t function) : function(function) {}
+    explicit constexpr SplayTree( Function function) : function(function) {}
 
-    explicit SplayTree(std::initializer_list<V> values,
-                       function_t function) : SplayTree(function) {
+    SplayTree(std::initializer_list<V> values,
+                        Function function) : SplayTree(function) {
         insert(values);
     }
 
@@ -842,7 +837,7 @@ public:
         }
     }
 
-    function_type_t get_function_value() const {
+     FunctionType get_function_value() const {
         return Node::get_function_value(root, function);
     }
 
