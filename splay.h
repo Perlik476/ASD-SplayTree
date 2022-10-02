@@ -615,7 +615,9 @@ private:
 
     explicit SplayTree(node_ptr_t root) : root(root) {}
 
-     Function function;
+    explicit SplayTree(node_ptr_t root, Function function) : root(root), function(function) {}
+
+    Function function;
 
 public:
 
@@ -725,7 +727,7 @@ public:
 
     SplayTree erase_less(const V &value) {
         _search(value);
-        auto result = SplayTree(root->unpin_left_subtree(*this));
+        auto result = SplayTree(root->unpin_left_subtree(*this), function);
 
         auto v = root->get_value();
         if (Compare{}(v, value)) {
@@ -738,7 +740,7 @@ public:
 
     SplayTree erase_greater(const V &value) {
         _search(value);
-        auto result = SplayTree(root->unpin_right_subtree(*this));
+        auto result = SplayTree(root->unpin_right_subtree(*this), function);
 
         auto v = root->get_value();
         if (Compare{}(value, v)) {

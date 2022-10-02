@@ -281,6 +281,12 @@ void test_function_basic() {
     auto splay_to_str_less = splay_to_str.erase_less(4);
     assert(splay_to_str_less.get_function_value() == "123");
     assert(splay_to_str.get_function_value() == "4679");
+
+    splay_to_str.insert(1);
+    assert(splay_to_str.get_function_value() == "14679");
+
+    splay_to_str_less.insert(8);
+    assert(splay_to_str_less.get_function_value() == "1238");
 }
 
 void test_comparer_basic() {
