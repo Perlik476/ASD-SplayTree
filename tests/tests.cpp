@@ -289,7 +289,7 @@ void test_function_basic() {
     assert(splay_to_str_less.get_function_value() == "1238");
 }
 
-void test_comparer_basic() {
+void test_comparator_basic() {
     SplayTree<int, std::greater<>> splay({2, 1, 3, 7});
     auto it = splay.begin();
     assert(*it++ == 7);
@@ -335,6 +335,47 @@ void test_erase_iterator() {
     assert(it == splay.end());
 }
 
+void test_comparator_concept() {
+    class CompInt {
+    public:
+        bool operator ()(int x, int y) {
+            return x < y;
+        }
+    };
+    assert((Comparator<CompInt, int>));
+    assert(!(Comparator<CompInt, std::string>));
+
+    class CompFloat {
+    public:
+        bool operator ()(float x, float y) {
+            return x > y;
+        }
+    };
+    assert((Comparator<CompFloat, float>));
+
+    class CompString {
+    public:
+        bool operator ()(std::string x, std::string y) {
+            return x < y;
+        }
+    };
+    assert((Comparator<CompString, std::string>));
+
+    class NotComp {};
+    assert(!(Comparator<NotComp, int>));
+
+    class NotCompVoidReturnValue {
+    public:
+        void operator()(int x, int y) {}
+    };
+    assert(!(Comparator<NotCompVoidReturnValue, int>));
+
+    class NotCompPrivateOperator {
+        bool operator ()(int x, int y) { return x < y; }
+    };
+    assert(!(Comparator<NotCompPrivateOperator, int>));
+}
+
 class Test {
     const std::function<void()> test;
     std::string name;
@@ -365,8 +406,10 @@ int main() {
             Test(test_contains_basic, "contains basic"),
             Test(test_lower_upper_bound_basic, "lower/upper bound basic"),
             Test(test_function_basic, "function basic"),
-            Test(test_comparer_basic, "comparer basic"),
-            Test(test_insert_iterator, "insert iterator")
+            Test(test_comparator_basic, "comparator basic"),
+            Test(test_insert_iterator, "insert iterator"),
+            Test(test_erase_iterator, "erase iterator"),
+            Test(test_comparator_concept, "comparator concept")
     };
 
     for (auto test : tests) {

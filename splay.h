@@ -3,20 +3,24 @@
 #include <stack>
 #include <map>
 #include <functional>
-#include <variant>
 
-template<class V, class Compare = std::less<V>, class FunctionType = int>
+template<class C, class V>
+concept Comparator = requires(C c, const V &x, const V &y) {
+    { c(x, y) } -> std::same_as<bool>;
+};
+
+template<class V, Comparator<V> Comp = std::less<V>, class FunctionType = int>
 class SplayTree {
 public:
     class Function {
         using function_t = std::function<const FunctionType(const V &, const FunctionType &, const FunctionType &)>;
 
         function_t function;
-        FunctionType default_value_null;
+        FunctionType default_value;
 
     public:
-        constexpr Function(function_t &&function, FunctionType default_value_null)
-                : function(std::move(function)), default_value_null(default_value_null) {}
+        constexpr Function(function_t &&function, FunctionType default_value)
+                : function(std::move(function)), default_value(default_value) {}
 
         Function() = default;
 
@@ -24,7 +28,7 @@ public:
 
         Function &operator =(const Function &other) {
             function = other.function;
-            default_value_null = other.default_value_null;
+            default_value = other.default_value;
             return *this;
         }
 
@@ -40,8 +44,8 @@ public:
             return function;
         }
 
-        const FunctionType get_default_null() const {
-            return default_value_null;
+        const FunctionType get_default() const {
+            return default_value;
         }
     };
 
@@ -54,6 +58,10 @@ private:
     using node_ptr_t = std::shared_ptr<Node>;
     using const_node_ptr_t = std::shared_ptr<const Node>;
     using traversal_t = std::stack<const_node_ptr_t>;
+
+    [[nodiscard]] static bool compare(const V &value1, const V &value2) {
+        return Comp{}(value1, value2);
+    }
 
     class Node : public std::enable_shared_from_this<Node> {
         using node_ptr_t = std::shared_ptr<Node>;
@@ -249,7 +257,7 @@ private:
             auto this_ptr = get_ptr();
             traversal.push(this_ptr);
 
-            if (Compare{}(v, value)) {
+            if (compare(v, value)) {
                 if (left != nullptr) {
                     return left->search_no_splay(v, splay_tree, traversal);
                 }
@@ -257,7 +265,7 @@ private:
                     return InternalIterator<true>(traversal);
                 }
             }
-            else if (Compare{}(value, v)) {
+            else if (compare(value, v)) {
                 if (right != nullptr) {
                     return right->search_no_splay(v, splay_tree, traversal);
                 }
@@ -289,7 +297,7 @@ private:
             auto this_ptr = get_ptr();
             V v = node->get_value();
 
-            if (Compare{}(v, value)) {
+            if (compare(v, value)) {
                 if (left != nullptr) {
                     return left->insert(v, splay_tree);
                 }
@@ -301,7 +309,7 @@ private:
                     return node;
                 }
             }
-            else if (Compare{}(value, v)) {
+            else if (compare(value, v)) {
                 if (right != nullptr) {
                     return right->insert(v, splay_tree);
                 }
@@ -327,7 +335,7 @@ private:
         node_ptr_t remove(V v, SplayTree &splay_tree) {
             auto this_ptr = get_ptr();
 
-            if (Compare{}(v, value)) {
+            if (compare(v, value)) {
                 if (left != nullptr) {
                     return left->remove(v, splay_tree);
                 }
@@ -337,7 +345,7 @@ private:
                     return get_ptr();
                 }
             }
-            else if (Compare{}(value, v)) {
+            else if (compare(value, v)) {
                 if (right != nullptr) {
                     return right->remove(v, splay_tree);
                 }
@@ -454,7 +462,7 @@ private:
 
         static const FunctionType get_function_value(node_ptr_t node, const Function &function) {
             if (node == nullptr) {
-                return function.get_default_null();
+                return function.get_default();
             }
             return node->function_value;
         }
@@ -679,7 +687,7 @@ public:
         _search(value);
         V found = root->get_value();
 
-        return !Compare{}(found, value) && !Compare{}(value, found);
+        return !compare(found, value) && !compare(value, found);
     }
 
     bool contains(const V &value) const {
@@ -690,7 +698,7 @@ public:
         auto node = _search_no_splay(value);
         V found = node->get_value();
 
-        return !Compare{}(found, value) && !Compare{}(value, found);
+        return !compare(found, value) && !compare(value, found);
     }
 
     size_t size() const {
@@ -715,7 +723,7 @@ public:
 
         if (erase(value)) {
             auto it = Iterator<true>(traversal_t({ root }));
-            if (Compare{}(*it, value)) {
+            if (compare(*it, value)) {
                 it++;
             }
             return it;
@@ -730,7 +738,7 @@ public:
         auto result = SplayTree(root->unpin_left_subtree(*this), function);
 
         auto v = root->get_value();
-        if (Compare{}(v, value)) {
+        if (compare(v, value)) {
             erase(v);
             result.insert(v);
         }
@@ -743,7 +751,7 @@ public:
         auto result = SplayTree(root->unpin_right_subtree(*this), function);
 
         auto v = root->get_value();
-        if (Compare{}(value, v)) {
+        if (compare(value, v)) {
             erase(v);
             result.insert(v);
         }
@@ -770,7 +778,7 @@ public:
 
     Iterator<true> find(const V &value) {
         _search(value);
-        return !Compare{}(root->get_value(), value) && !Compare{}(value, root->get_value()) ?
+        return !compare(root->get_value(), value) && !compare(value, root->get_value()) ?
             Iterator<true>(traversal_t({root})) : end();
     }
 
@@ -797,7 +805,7 @@ public:
 
     Iterator<true> lower_bound(const V &value) {
         _search(value);
-        if (!Compare{}(root->get_value(), value)) {
+        if (!compare(root->get_value(), value)) {
             return Iterator<true>(traversal_t({root}));
         }
         else {
@@ -819,7 +827,7 @@ public:
 
     Iterator<true> upper_bound(const V &value) {
         _search(value);
-        if (Compare{}(value, root->get_value())) {
+        if (compare(value, root->get_value())) {
             return Iterator<true>(traversal_t({root}));
         }
         else {
